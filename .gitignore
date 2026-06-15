@@ -38,3 +38,4 @@ npm-debug.log*
 .vercel
 .idea
 .vscode
+tsconfig.tsbuildinfo

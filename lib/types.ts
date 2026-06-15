@@ -151,6 +151,25 @@ export interface LedgerEntry {
   txRef: string;
   backend: "mock" | "solana";
   ts: string;
+  platformFee?: number; // 20% of amount, tracked for display, on-chain split is v2
+}
+
+// A registered merchant. Anyone can apply by paying the registration fee; an
+// admin approves before their signals appear in the public catalog.
+export interface MerchantRecord {
+  pubkey: string; // base58 agent DID
+  label: string;
+  bio: string;
+  registrationTx: string; // Solana tx of the registration fee payment
+  status: "pending" | "approved" | "suspended";
+  registeredAt: string;
+  approvedAt?: string;
+  feeSharePct: number; // share the merchant keeps, e.g. 80 (platform takes 20)
+}
+
+// A pre-signed signal submitted by an approved external merchant.
+export interface ExternalSignal extends AlphaSignal {
+  submittedAt: string;
 }
 
 export interface AgentReputation {

@@ -2,6 +2,7 @@ import { getCatalog, readLedger, getReputation } from "@/lib/economy";
 import { overview, isMock } from "@/lib/byreal";
 import { loadMerchant, toListed } from "@/lib/merchant";
 import { registerOnMantle } from "@/lib/mantle";
+import { getPendingCount } from "@/lib/merchant-registry";
 import { Dashboard } from "@/components/Dashboard";
 
 export const dynamic = "force-dynamic";
@@ -12,12 +13,13 @@ export default async function Home({ searchParams }: { searchParams: { mode?: st
   const effectiveMock = forceMock ?? isMock();
 
   const merchant = loadMerchant().pubkey;
-  const [signals, ov, ledger, reputation, mantle] = await Promise.all([
+  const [signals, ov, ledger, reputation, mantle, pendingCount] = await Promise.all([
     getCatalog(false, forceMock),
     overview(forceMock),
     readLedger(),
     getReputation(),
     registerOnMantle(merchant, "lode-merchant"),
+    getPendingCount().catch(() => 0),
   ]);
 
   return (
@@ -31,6 +33,7 @@ export default async function Home({ searchParams }: { searchParams: { mode?: st
       mantleExplorer={mantle.explorer}
       mantleRegistered={mantle.status === "registered"}
       mock={effectiveMock}
+      pendingCount={pendingCount}
     />
   );
 }

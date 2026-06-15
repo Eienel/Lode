@@ -68,8 +68,8 @@ export async function executeCommand(cmd: string): Promise<string> {
     let out = "";
     let err = "";
     const timer = setTimeout(() => { child.kill(); resolve(dryRunFallback(cmd)); }, 30_000);
-    child.stdout.on("data", (d) => (out += d.toString()));
-    child.stderr.on("data", (d) => (err += d.toString()));
+    child.stdout?.on("data", (d) => (out += d.toString()));
+    child.stderr?.on("data", (d) => (err += d.toString()));
     child.on("close", (code) => {
       clearTimeout(timer);
       const result = out || err;

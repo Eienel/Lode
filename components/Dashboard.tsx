@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Stack, Pulse, Receipt, FlowArrow, Cube } from "@phosphor-icons/react";
+import { Stack, Pulse, Receipt, FlowArrow, Cube, ArrowRight } from "@phosphor-icons/react";
 import dynamic from "next/dynamic";
 import type { ListedSignal, LedgerEntry, AgentReputation, Overview } from "@/lib/types";
 import { SignalCard } from "./SignalCard";
@@ -24,6 +24,7 @@ export function Dashboard({
   mantleExplorer,
   mantleRegistered,
   mock,
+  pendingCount,
 }: {
   signals: ListedSignal[];
   overview: Overview;
@@ -34,6 +35,7 @@ export function Dashboard({
   mantleExplorer: string | null;
   mantleRegistered: boolean;
   mock: boolean;
+  pendingCount?: number;
 }) {
   const [ledger, setLedger] = useState(initialLedger);
   const [reputation, setReputation] = useState(initialRep);
@@ -141,6 +143,22 @@ export function Dashboard({
                 .map((r) => (
                   <AgentCard key={r.agent} rep={r} />
                 ))}
+            </div>
+          </div>
+
+          <div>
+            <SectionTitle>Run a merchant</SectionTitle>
+            <div className="rounded-card border border-line bg-paper-raised p-4 shadow-card">
+              <p className="text-[13px] font-medium text-ink">List your own signals</p>
+              <p className="mt-1 text-[11px] leading-relaxed text-ink-soft">
+                Mine Byreal pools, seal your signals, and sell intelligence to buyer agents. 25 usdc registration, 20% platform fee.
+              </p>
+              <a href="/register" className="mt-3 flex items-center gap-1.5 text-[12px] font-medium text-accent hover:underline">
+                Apply to become a merchant <ArrowRight size={12} />
+              </a>
+              {!!pendingCount && (
+                <p className="mt-2 text-[10px] text-ink-faint">{pendingCount} pending approval</p>
+              )}
             </div>
           </div>
 

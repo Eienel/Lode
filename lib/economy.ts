@@ -8,7 +8,12 @@ import path from "node:path";
 import os from "node:os";
 import { mineSignals, loadMerchant } from "./merchant";
 import { hashPayload, verify } from "./identity";
+import { getApprovedExternalSignals, readRegistry } from "./merchant-registry";
 import type { AlphaSignal, LedgerEntry, AgentReputation } from "./types";
+
+// Platform fee taken on each sale. Tracked in the ledger for display; the
+// on-chain split is a v2 concern.
+const PLATFORM_FEE_PCT = 0.2;
 
 // Vercel only allows writes under /tmp; locally we keep a project data dir.
 const DATA_DIR = process.env.LODE_DATA_DIR || (process.env.VERCEL ? path.join(os.tmpdir(), "lode") : path.join(process.cwd(), "data"));
@@ -24,7 +29,11 @@ export async function getCatalog(force = false, forceMock?: boolean): Promise<Al
   if (!force && catalogCache?.key === mockKey && Date.now() - catalogCache.at < CATALOG_TTL_MS) {
     return catalogCache.signals;
   }
-  const signals = await mineSignals(6, forceMock);
+  const [lodeSignals, externalSignals] = await Promise.all([
+    mineSignals(6, forceMock),
+    getApprovedExternalSignals().catch(() => []),
+  ]);
+  const signals = [...lodeSignals, ...externalSignals];
   catalogCache = { at: Date.now(), signals, key: mockKey };
   return signals;
 }
@@ -129,6 +138,7 @@ export async function purchase(signalId: string, buyerAgent: string): Promise<Pu
     txRef,
     backend,
     ts: new Date().toISOString(),
+    platformFee: Math.round(signal.priceUsdc * PLATFORM_FEE_PCT * 100) / 100,
   };
   await appendLedger(entry);
 
@@ -138,12 +148,13 @@ export async function purchase(signalId: string, buyerAgent: string): Promise<Pu
 // ---- reputation derived from the ledger ------------------------------------
 
 export async function getReputation(): Promise<AgentReputation[]> {
-  const ledger = await readLedger();
+  const [ledger, registry] = await Promise.all([readLedger(), readRegistry().catch(() => [])]);
+  const labelFor = (pubkey: string) => registry.find((r) => r.pubkey === pubkey)?.label ?? "Merchant";
   const map = new Map<string, AgentReputation>();
   const merchant = loadMerchant().pubkey;
   map.set(merchant, { agent: merchant, label: "Lode merchant", role: "merchant", sales: 0, revenue: 0 });
   for (const e of ledger) {
-    const m = map.get(e.merchantAgent) ?? { agent: e.merchantAgent, label: "Merchant", role: "merchant" as const, sales: 0, revenue: 0 };
+    const m = map.get(e.merchantAgent) ?? { agent: e.merchantAgent, label: labelFor(e.merchantAgent), role: "merchant" as const, sales: 0, revenue: 0 };
     m.sales += 1;
     m.revenue += e.amount;
     map.set(e.merchantAgent, m);
