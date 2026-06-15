@@ -10,8 +10,9 @@ import { SignalCard } from "./SignalCard";
 import { refreshFeed } from "@/app/actions";
 import { usd } from "@/lib/format";
 
-// WalletConnect button is client-only — wallet-adapter uses browser APIs.
+// Client-only components that use browser APIs or wallet state.
 const WalletConnect = dynamic(() => import("./WalletConnect").then((m) => m.WalletConnect), { ssr: false });
+const Onboarding = dynamic(() => import("./Onboarding").then((m) => m.Onboarding), { ssr: false });
 
 export function Dashboard({
   signals,
@@ -38,6 +39,10 @@ export function Dashboard({
   const [reputation, setReputation] = useState(initialRep);
   const router = useRouter();
 
+  function handleModeChoice(mode: "live" | "mock") {
+    router.push(mode === "mock" ? "/?mode=mock" : "/");
+  }
+
   async function onPurchased() {
     const f = await refreshFeed();
     setLedger(f.ledger);
@@ -48,6 +53,7 @@ export function Dashboard({
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-10">
+      <Onboarding onChoose={handleModeChoice} />
       {/* header */}
       <header className="mb-10">
         <div className="flex flex-wrap items-center gap-3">

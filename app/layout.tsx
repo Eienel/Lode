@@ -8,7 +8,7 @@ const SolanaProvider = dynamic(
 );
 
 export const metadata: Metadata = {
-  title: "Lode — agent-to-agent alpha market",
+  title: "Lode: agent-to-agent alpha market",
   description: "An autonomous merchant agent mines Byreal CLMM alpha, seals it, and sells it wallet-to-wallet to buyer agents.",
 };
 

@@ -1,101 +1,121 @@
 # Lode
 
-An autonomous agent-to-agent alpha market on Byreal (Solana CLMM).
+An agent-to-agent alpha market on Byreal (Solana CLMM).
 
-Lode is not a single trading bot. It is a small economy. A merchant agent mines
-Byreal concentrated-liquidity pools for the best ranges and top farmers, packages
-each finding into a signed, priced Alpha Signal, and sells it wallet-to-wallet to
-buyer agents who verify the seal, pay, unlock the full signal, and run the
-ready-made execution. The marketplace layer between agents is the point.
+A merchant agent mines Byreal concentrated-liquidity pools, packages each finding into a signed Alpha Signal, and sells it to buyer agents who verify, pay, and execute. The marketplace layer between agents is the point, not a single trading bot.
 
-Live demo: https://uselode.vercel.app
+Live: https://uselode.vercel.app
 
-## Why this fits the Agentic Economy track
+---
 
-The track asks for an agentic wallet economy built on the Byreal Skills CLI, not a
-lone agent. Lode has two distinct agent roles with their own keypair identities,
-a product (sealed Alpha Signals), a price (USDC), a payment rail (mock or real
-Solana), and a settlement record (an on-disk ledger). Value moves between agents.
+## The loop
 
-- Byreal integration depth: the merchant uses `pools list`, `pools analyze`
-  (range analysis, risk factors, projections) and `positions top-positions` to
-  mine alpha, then emits real `positions copy` / `positions open` dry-run
-  commands the buyer executes. It chains the CLI's read and write surfaces, not a
-  single endpoint.
-- Agent autonomy: the merchant ranks pools, picks the optimal LP band, reasons
-  about it with claude-sonnet-4-6, seals it, and prices it without human input.
-  The buyer browses, ranks by risk-adjusted ROI, verifies the signature, pays,
-  and produces an executable command on its own.
-- Verifiability: every signal is hashed and ed25519-signed by the merchant's
-  identity. Buyers verify before paying. Every purchase is appended to a ledger
-  that anyone can read. Reputation (sales, revenue) is derived from that ledger.
+```
+Merchant agent                          Buyer agent
+--------------                          -----------
+pools list (Byreal)                     browse catalog
+pools analyze (top APRs, range bands)   rank by risk-adjusted ROI
+top-positions (copy targets)            verify ed25519 seal
+synthesize (claude-sonnet-4-6)          pay in SOL or USDC (mainnet)
+seal (sha256 hash + ed25519 sign)       receive unlocked signal
+price in USDC                           run positions copy --dry-run
+list on catalog                         ledger entry settled
+```
+
+Every signal is sealed by the merchant's key. Buyers verify the seal before paying. Every purchase lands in an on-disk ledger. That ledger is the evidence of a real agent-to-agent wallet economy.
+
+---
+
+## Modes
+
+**Live mode (default on the site):** real Byreal pool data fetched over HTTP. Connect a Solana wallet (Phantom or Solflare) to pay with real USDC or SOL on mainnet. Execution stays dry-run so no positions open without your explicit confirm in the CLI.
+
+**Mock mode:** realistic fixture data, instant payments, no wallet needed. Everything works the same way, nothing touches mainnet. Toggle with the pill in the header or visit `/?mode=mock`.
+
+First-time visitors are asked which mode they want. The choice can be changed anytime.
+
+---
+
+## What is live on mainnet and testnet
+
+**Solana mainnet**
+- Signal payments in USDC or SOL go to the merchant agent pubkey `5EhEKnYin2nhs3CUReoYFmaUySRaYZnNrnCqZmc4TV76`
+- USDC mint: `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`
+- Real tx signatures land in the economy ledger, marked "solana"
+
+**Mantle Sepolia testnet (chain 5003)**
+- IdentityRegistry contract: `0xb430a1cb382aa307f0aeb140bf20c4220f7dd24a`
+- Merchant agent registered as ERC-8004 agent #1, URI `did:lode:5EhEKnYin2nhs3CUReoYFmaUySRaYZnNrnCqZmc4TV76#lode-merchant`
+- Register tx: https://explorer.sepolia.mantle.xyz/tx/0x481cb61ed8241a066f0ffb377dfe6a2e09a188ddc705f699459709a061972f14
+- Economy tx (0.05 MNT): https://explorer.sepolia.mantle.xyz/tx/0x1951aa812f04f18502ea71531928216e1c3d3f441f6a93043a1a1604593491ea
+
+---
 
 ## Architecture
 
 ```
-byreal-cli  ──►  lib/byreal.ts      typed wrapper, JSON parsing, mock fixtures
-                      │
-                      ▼
-                 lib/merchant.ts    mine ► analyze ► pick band ► synthesize
-                      │             (claude-sonnet-4-6) ► seal (ed25519)
-                      ▼
-                 lib/economy.ts     catalog, payment backends, ledger, reputation
-                      │
-        ┌─────────────┴──────────────┐
-        ▼                            ▼
-  scripts/buyer.ts            app/ (Next.js dashboard)
-  headless A2A loop           marketplace, buy flow, live ledger
+lib/byreal-api.ts     fetch from api2.byreal.io (same endpoints as byreal-cli)
+lib/byreal.ts         normalizes data, mock fixture fallback
+lib/merchant.ts       mine, analyze, pick band, synthesize, seal
+lib/economy.ts        catalog, payment backends, ledger, reputation
+lib/identity.ts       ed25519 agent DID, seal and verify
+lib/mantle.ts         ERC-8004 identity registry on Mantle
+app/                  Next.js 14 dashboard (server components + client islands)
+components/           SignalCard, PayButton, RangeViz, WalletConnect, Onboarding
+scripts/buyer.ts      headless A2A loop (terminal)
+scripts/merchant.ts   standalone mine and seal
+contracts/            IdentityRegistry.sol (deployed on Mantle Sepolia)
 ```
 
-- `lib/byreal.ts` is the data layer. By default (`LODE_MOCK` unset) it serves
-  real captured fixtures so the app runs with zero install and zero funds. With
-  `LODE_MOCK=0` it fetches live data over HTTP from the same api2.byreal.io
-  endpoints the byreal-cli uses (`lib/byreal-api.ts`), which is how the hosted
-  site stays live without spawning a CLI in a serverless function.
-- `lib/identity.ts` gives each agent an ed25519 keypair; the base58 public key is
-  its DID. Signals are canonicalized, hashed (sha256), and signed.
-- `lib/merchant.ts` is the mining and synthesis pipeline.
-- `lib/economy.ts` is the marketplace: catalog, a `Payment` interface with mock
-  and Solana backends, the ledger, and ledger-derived reputation.
-- `lib/mantle.ts` registers the agent identity as an ERC-8004 agent on Mantle
-  (stretch, flagged with `LODE_MANTLE=1`).
-- `scripts/buyer.ts` runs the full agent-to-agent loop in the terminal.
+---
 
-## Run it
-
-Mock mode (no install, no wallet, no funds):
+## Run locally
 
 ```bash
 npm install
-npm run dev            # dashboard at http://localhost:3000
-npm run buyer          # headless A2A loop in the terminal
-npm run merchant       # mine and seal signals, print the catalog
+npm run dev                   # mock mode, http://localhost:3000
+LODE_MOCK=0 npm run dev       # live Byreal data
+npm run buyer                 # headless A2A loop in the terminal
+LODE_MOCK=0 npm run buyer     # same loop against live data
+npm run merchant              # mine and print the signal catalog
 ```
 
-Live Byreal data (over HTTP, no CLI needed):
+Add `ANTHROPIC_API_KEY` to `.env` to use claude-sonnet-4-6 for synthesis. Without it a deterministic local writer runs instead and everything still works.
 
-```bash
-LODE_MOCK=0 npm run dev      # pulls live pools, overview, and top farmers
-LODE_MOCK=0 npm run buyer    # emits a real, executable positions copy --dry-run
-```
+See `.env.example` for all options.
 
-To actually run the emitted dry-run against the chain, install the CLI and set up
-your own wallet:
+---
 
-```bash
-npm install -g @byreal-io/byreal-cli
-byreal-cli setup
-byreal-cli positions copy --position <addr-from-signal> --amount-usd 250 --dry-run
-```
+## How a judge verifies it
 
-Add `ANTHROPIC_API_KEY` to `.env` for the merchant's claude-sonnet-4-6 synthesis.
-Without it, a deterministic local synthesizer keeps the demo fully working.
+1. **Browse and buy, no wallet.** Open https://uselode.vercel.app and buy any signal. Ed25519 seal verifies, signal unlocks, ledger updates.
 
-See `.env.example` for all options, `SUBMISSION.md` for the writeup, and `DEMO.md`
-for the 90 second video script.
+2. **Verify Mantle identity, no wallet.**
+   ```bash
+   cast call 0xb430a1cb382aa307f0aeb140bf20c4220f7dd24a \
+     "getAgent(uint256)" 1 --rpc-url https://rpc.sepolia.mantle.xyz
+   ```
+   Returns agent id 1 and URI `did:lode:5EhEKnYin2nhs3CUReoYFmaUySRaYZnNrnCqZmc4TV76#lode-merchant`.
 
-## Hard rules honored
+3. **Run the headless loop with live data.**
+   ```bash
+   git clone <this repo> && cd Lode && npm install
+   LODE_MOCK=0 npm run buyer
+   # prints: catalog, pick, seal verify, payment, unsealed signal, dry-run command, ledger
+   ```
 
-From the Byreal CLI: always `--dry-run` before `--confirm`; never request,
-display, or log private keys; never truncate on-chain addresses or signatures;
-reserve a SOL buffer for position ops. Secrets are loaded from env and gitignored.
+4. **Run the dry-run against a real position.**
+   ```bash
+   npm install -g @byreal-io/byreal-cli && byreal-cli setup
+   # copy the positions copy command from the buyer output, e.g.:
+   byreal-cli positions copy --position <addr> --amount-usd 250 --dry-run
+   # returns a live quote against a real on-chain position
+   ```
+
+5. **Pay with a real wallet.** On the live site, connect Phantom or Solflare, choose USDC or SOL, buy a signal. The Solana tx signature appears in the ledger.
+
+---
+
+## CLI rules honored
+
+Always `--dry-run` before `--confirm`. Never request, display, or log private keys. Never truncate on-chain addresses or signatures. Reserve SOL buffer for position ops. Secrets are loaded from env and gitignored.
