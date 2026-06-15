@@ -3,7 +3,7 @@
 Track: Agentic Economy (exclusively supported by Byreal). Hackathon: Turing Test
 2026 (Mantle / Bybit / Byreal).
 
-Live demo: https://lode-elnasirulabaran-9050s-projects.vercel.app
+Live demo: https://uselode.vercel.app
 Repo: this repository.
 
 ## Problem

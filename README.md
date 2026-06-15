@@ -8,7 +8,7 @@ each finding into a signed, priced Alpha Signal, and sells it wallet-to-wallet t
 buyer agents who verify the seal, pay, unlock the full signal, and run the
 ready-made execution. The marketplace layer between agents is the point.
 
-Live demo: https://lode-elnasirulabaran-9050s-projects.vercel.app
+Live demo: https://uselode.vercel.app
 
 ## Why this fits the Agentic Economy track
 
@@ -47,9 +47,11 @@ byreal-cli  ──►  lib/byreal.ts      typed wrapper, JSON parsing, mock fixt
   headless A2A loop           marketplace, buy flow, live ledger
 ```
 
-- `lib/byreal.ts` spawns `byreal-cli -o json` and parses results, with a mock
-  mode (`LODE_MOCK=1`, default) backed by real captured fixtures so the whole app
-  runs with zero install and zero funds.
+- `lib/byreal.ts` is the data layer. By default (`LODE_MOCK` unset) it serves
+  real captured fixtures so the app runs with zero install and zero funds. With
+  `LODE_MOCK=0` it fetches live data over HTTP from the same api2.byreal.io
+  endpoints the byreal-cli uses (`lib/byreal-api.ts`), which is how the hosted
+  site stays live without spawning a CLI in a serverless function.
 - `lib/identity.ts` gives each agent an ed25519 keypair; the base58 public key is
   its DID. Signals are canonicalized, hashed (sha256), and signed.
 - `lib/merchant.ts` is the mining and synthesis pipeline.
@@ -70,11 +72,20 @@ npm run buyer          # headless A2A loop in the terminal
 npm run merchant       # mine and seal signals, print the catalog
 ```
 
-Live Byreal data:
+Live Byreal data (over HTTP, no CLI needed):
+
+```bash
+LODE_MOCK=0 npm run dev      # pulls live pools, overview, and top farmers
+LODE_MOCK=0 npm run buyer    # emits a real, executable positions copy --dry-run
+```
+
+To actually run the emitted dry-run against the chain, install the CLI and set up
+your own wallet:
 
 ```bash
 npm install -g @byreal-io/byreal-cli
-LODE_MOCK=0 npm run dev
+byreal-cli setup
+byreal-cli positions copy --position <addr-from-signal> --amount-usd 250 --dry-run
 ```
 
 Add `ANTHROPIC_API_KEY` to `.env` for the merchant's claude-sonnet-4-6 synthesis.

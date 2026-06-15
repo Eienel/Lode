@@ -7,7 +7,7 @@ Setup before recording:
 npm install
 npm run dev      # dashboard on http://localhost:3000
 ```
-Use the live site if you prefer: https://lode-elnasirulabaran-9050s-projects.vercel.app
+Use the live site if you prefer: https://uselode.vercel.app
 
 ---
 
