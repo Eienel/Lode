@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { LockSimple, ShieldCheck, Sparkle, CircleNotch, Lightning, Play } from "@phosphor-icons/react";
+import { LockSimple, ShieldCheck, Sparkle, CircleNotch, Lightning, Play, Copy, Check, Terminal, Warning } from "@phosphor-icons/react";
 import type { AlphaSignal, ListedSignal } from "@/lib/types";
 import { executeCommand } from "@/app/actions";
 import { buySignal } from "@/app/actions";
@@ -132,6 +132,9 @@ export function SignalCard({ signal, onPurchased }: { signal: ListedSignal; onPu
                 )}
 
                 <AddressChip value={tx} label="tx" />
+
+                {/* Open for real */}
+                {execOutput && <ConfirmCard signal={full} />}
               </motion.div>
             )
           )}
@@ -164,4 +167,73 @@ function Metric({ label, value }: { label: string; value: string }) {
 
 function displayPrice(p: number): string {
   return p < 1 ? p.toPrecision(3) : p < 1000 ? p.toFixed(2) : Math.round(p).toLocaleString();
+}
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  async function handleCopy() {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+  return (
+    <button
+      onClick={handleCopy}
+      className="flex items-center gap-1 rounded px-2 py-1 text-[10px] font-medium text-ink-faint transition-colors hover:text-ink"
+    >
+      {copied ? <><Check size={11} className="text-good" /> copied</> : <><Copy size={11} /> copy</>}
+    </button>
+  );
+}
+
+function ConfirmCard({ signal }: { signal: AlphaSignal }) {
+  const confirmCmd = signal.execCommand.replace("--dry-run", "--confirm");
+  const checklist = [
+    "byreal-cli installed: npm install -g @byreal-io/byreal-cli",
+    "wallet configured: byreal-cli setup",
+    "at least 0.03 SOL in wallet for position open fee",
+    "correct token pair available in your wallet",
+  ];
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: "spring", stiffness: 140, damping: 20 }}
+      className="rounded-md border border-line bg-paper-raised p-4 flex flex-col gap-3"
+    >
+      <div className="flex items-center gap-1.5">
+        <Terminal size={13} className="text-ink" />
+        <span className="text-[12px] font-medium text-ink">open position in your terminal</span>
+      </div>
+
+      <p className="text-[11px] leading-relaxed text-ink-soft">
+        The dry-run above ran on our servers without touching your wallet. To open a real position, run this command in your own terminal with byreal-cli installed and your wallet configured.
+      </p>
+
+      <div className="rounded-md border border-line bg-ink p-3">
+        <div className="mb-1.5 flex items-center justify-between">
+          <div className="flex items-center gap-1 text-[10px] font-medium text-paper-raised">
+            <Warning size={11} weight="fill" className="text-yellow-400" />
+            runs for real, not a dry-run
+          </div>
+          <CopyButton text={confirmCmd} />
+        </div>
+        <code className="block break-all font-mono text-[11px] leading-relaxed text-paper-raised">
+          {confirmCmd}
+        </code>
+      </div>
+
+      <div className="rounded-md bg-paper-sunken px-3 py-2.5">
+        <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-ink-faint">before you run</p>
+        <ul className="flex flex-col gap-1.5">
+          {checklist.map((item) => (
+            <li key={item} className="flex items-start gap-2 text-[11px] text-ink-soft">
+              <ShieldCheck size={12} className="mt-0.5 shrink-0 text-good" weight="fill" />
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </motion.div>
+  );
 }

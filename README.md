@@ -86,9 +86,25 @@ See `.env.example` for all options.
 
 ---
 
+## Two-step execution flow
+
+Lode follows a strict dry-run-first policy. No position is opened without an explicit confirm step in the buyer's own terminal.
+
+**Step 1: dry-run on site.** After buying a signal, click "run dry-run now." The site calls the byreal-cli `positions copy --dry-run` command on its own server and shows the live quote. No wallet is touched, no position opens.
+
+**Step 2: confirm in your terminal.** The unlocked card shows a `--confirm` version of the same command. Copy it and run it yourself with byreal-cli installed and your wallet configured. This is the only way a position opens. The site never holds private keys.
+
+```
+buy signal on site     -->  dry-run on site (live quote, no trade)
+                        -->  copy --confirm command
+                        -->  run in your terminal (real position opens)
+```
+
+---
+
 ## How a judge verifies it
 
-1. **Browse and buy, no wallet.** Open https://uselode.vercel.app and buy any signal. Ed25519 seal verifies, signal unlocks, ledger updates.
+1. **Browse and buy, no wallet.** Open https://uselode.vercel.app and buy any signal. Ed25519 seal verifies, signal unlocks, dry-run runs, ledger updates.
 
 2. **Verify Mantle identity, no wallet.**
    ```bash
@@ -112,10 +128,12 @@ See `.env.example` for all options.
    # returns a live quote against a real on-chain position
    ```
 
-5. **Pay with a real wallet.** On the live site, connect Phantom or Solflare, choose USDC or SOL, buy a signal. The Solana tx signature appears in the ledger.
+5. **Open a real position.** Replace `--dry-run` with `--confirm` in the command above. Requires byreal-cli wallet configured and at least 0.03 SOL buffer in the wallet.
+
+6. **Pay with a real wallet.** On the live site, connect Phantom or Solflare, choose USDC or SOL, buy a signal. The Solana tx signature appears in the ledger.
 
 ---
 
 ## CLI rules honored
 
-Always `--dry-run` before `--confirm`. Never request, display, or log private keys. Never truncate on-chain addresses or signatures. Reserve SOL buffer for position ops. Secrets are loaded from env and gitignored.
+Always `--dry-run` before `--confirm`. Never request, display, or log private keys. Never truncate on-chain addresses or signatures. Reserve SOL buffer for position ops (0.03 SOL for open). Secrets are loaded from env and gitignored.
