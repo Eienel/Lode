@@ -30,7 +30,8 @@ keypair*.json
 *.local.md
 NOTES.md
 
-# misc
+# Claude Code internals
+.claude/
 .DS_Store
 *.log
 npm-debug.log*
