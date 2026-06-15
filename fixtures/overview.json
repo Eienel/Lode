@@ -1,0 +1,19 @@
+{
+  "success": true,
+  "meta": {
+    "timestamp": "2026-06-15T11:17:43.496Z",
+    "version": "0.3.6",
+    "execution_time_ms": 307
+  },
+  "data": {
+    "tvl": 14147214.555379873,
+    "tvl_change_24h": 1.4147,
+    "volume_24h_usd": 10820725.932590248,
+    "volume_change_24h": 0.3162,
+    "volume_all": 3432313376.149604,
+    "fee_24h_usd": 9124.738285633648,
+    "fee_change_24h": 0.3422,
+    "fee_all": 2674995.509299297,
+    "pools_count": 111
+  }
+}

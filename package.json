@@ -1,0 +1,36 @@
+{
+  "name": "lode",
+  "version": "0.1.0",
+  "private": true,
+  "description": "An autonomous agent-to-agent alpha market on Byreal (Solana CLMM).",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "buyer": "tsx scripts/buyer.ts",
+    "merchant": "tsx scripts/merchant.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.1",
+    "@noble/ed25519": "^2.1.0",
+    "@noble/hashes": "^1.5.0",
+    "@phosphor-icons/react": "^2.1.7",
+    "@solana/web3.js": "^1.95.4",
+    "bs58": "^6.0.0",
+    "framer-motion": "^11.11.0",
+    "next": "14.2.15",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.13",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2"
+  }
+}

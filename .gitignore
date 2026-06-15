@@ -1,0 +1,39 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# next
+/.next/
+/out/
+/build
+next-env.d.ts
+
+# env and secrets
+.env
+.env.*
+!.env.example
+*.key
+*.keypair
+*-keypair.json
+keypair*.json
+.config/byreal
+~/.config/byreal
+
+# runtime data and ledger (the economy writes here)
+/data/
+*.ledger.json
+
+# local notes and scratch
+/scratch/
+/notes/
+*.local.md
+NOTES.md
+
+# misc
+.DS_Store
+*.log
+npm-debug.log*
+.vercel
+.idea
+.vscode

@@ -1,0 +1,145 @@
+{
+  "success": true,
+  "meta": {
+    "timestamp": "2026-06-15T11:17:41.138Z",
+    "version": "0.3.6",
+    "execution_time_ms": 5028
+  },
+  "data": {
+    "pool": {
+      "address": "LVcDubF4BFsEw8qmxupmw74bbZfiya99kor5c3Hh24r",
+      "pair": "SPCXx/USDC",
+      "category": "unknown",
+      "currentPrice": "169.82079054",
+      "feeRate": "0.10%",
+      "tickSpacing": 10
+    },
+    "metrics": {
+      "tvl": "86697.81",
+      "volume24h": "680546.96",
+      "volume7d": "2081900.58",
+      "fee24h": "680.55",
+      "fee7d": "2081.90",
+      "feeApr24h": "286.51%",
+      "totalApr": "286.51%",
+      "volumeToTvl": "7.85"
+    },
+    "volatility": {
+      "dayPriceRange": {
+        "low": "166.13210576",
+        "high": "172.94716444"
+      },
+      "dayPriceRangePercent": "4.01%"
+    },
+    "rangeAnalysis": [
+      {
+        "rangePercent": 1,
+        "priceLower": "168.19839205",
+        "priceUpper": "171.59605337",
+        "estimatedFeeApr": "1536.2%",
+        "estimatedTotalApr": "1536.2%",
+        "inRangeLikelihood": "low",
+        "rebalanceFrequency": "high"
+      },
+      {
+        "rangePercent": 2,
+        "priceLower": "166.52487334",
+        "priceUpper": "173.32053572",
+        "estimatedFeeApr": "770.0%",
+        "estimatedTotalApr": "770.0%",
+        "inRangeLikelihood": "low",
+        "rebalanceFrequency": "high"
+      },
+      {
+        "rangePercent": 3,
+        "priceLower": "164.86800559",
+        "priceUpper": "175.06234854",
+        "estimatedFeeApr": "514.6%",
+        "estimatedTotalApr": "514.6%",
+        "inRangeLikelihood": "low",
+        "rebalanceFrequency": "high"
+      },
+      {
+        "rangePercent": 5,
+        "priceLower": "161.44204723",
+        "priceUpper": "178.42016351",
+        "estimatedFeeApr": "310.3%",
+        "estimatedTotalApr": "310.3%",
+        "inRangeLikelihood": "medium",
+        "rebalanceFrequency": "medium"
+      },
+      {
+        "rangePercent": 8,
+        "priceLower": "156.35793552",
+        "priceUpper": "183.4862693",
+        "estimatedFeeApr": "195.4%",
+        "estimatedTotalApr": "195.4%",
+        "inRangeLikelihood": "high",
+        "rebalanceFrequency": "low"
+      },
+      {
+        "rangePercent": 10,
+        "priceLower": "152.95579184",
+        "priceUpper": "186.81875795",
+        "estimatedFeeApr": "157.1%",
+        "estimatedTotalApr": "157.1%",
+        "inRangeLikelihood": "high",
+        "rebalanceFrequency": "low"
+      },
+      {
+        "rangePercent": 15,
+        "priceLower": "144.33714348",
+        "priceUpper": "195.41718591",
+        "estimatedFeeApr": "105.0%",
+        "estimatedTotalApr": "105.0%",
+        "inRangeLikelihood": "high",
+        "rebalanceFrequency": "low"
+      },
+      {
+        "rangePercent": 20,
+        "priceLower": "135.93201037",
+        "priceUpper": "203.79907629",
+        "estimatedFeeApr": "79.6%",
+        "estimatedTotalApr": "79.6%",
+        "inRangeLikelihood": "high",
+        "rebalanceFrequency": "low"
+      },
+      {
+        "rangePercent": 35,
+        "priceLower": "110.40608348",
+        "priceUpper": "229.32235759",
+        "estimatedFeeApr": "46.0%",
+        "estimatedTotalApr": "46.0%",
+        "inRangeLikelihood": "high",
+        "rebalanceFrequency": "low"
+      },
+      {
+        "rangePercent": 50,
+        "priceLower": "84.87489811",
+        "priceUpper": "254.70943862",
+        "estimatedFeeApr": "32.2%",
+        "estimatedTotalApr": "32.2%",
+        "inRangeLikelihood": "high",
+        "rebalanceFrequency": "low"
+      }
+    ],
+    "riskFactors": {
+      "tvlRisk": "high",
+      "volatilityRisk": "low",
+      "summary": [
+        "Pool has low TVL ($86698) — higher slippage risk",
+        "Day price range 4.01% — moderate IL risk"
+      ]
+    },
+    "investmentProjection": {
+      "amountUsd": 1000,
+      "rangePercent": 10,
+      "priceLower": "152.95579184",
+      "priceUpper": "186.81875795",
+      "dailyFeeEstimate": "4.30",
+      "weeklyFeeEstimate": "30.13",
+      "monthlyFeeEstimate": "129.13",
+      "note": "Based on current 24h volume/fees. Actual returns vary."
+    }
+  }
+}
