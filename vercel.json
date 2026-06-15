@@ -1,4 +1,4 @@
 {
-  "buildCommand": "next build",
+  "buildCommand": "npm install -g @byreal-io/byreal-cli && next build",
   "framework": "nextjs"
 }
