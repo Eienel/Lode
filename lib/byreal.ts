@@ -1,57 +1,17 @@
-// Typed wrapper around byreal-cli. Spawns the CLI with `-o json` and parses the
-// result, or serves realistic bundled fixtures in mock mode (LODE_MOCK=1).
+// Typed Byreal data layer. Serves realistic bundled fixtures in mock mode
+// (LODE_MOCK default on), or live data over HTTP from the same api2.byreal.io
+// endpoints the byreal-cli uses (LODE_MOCK=0). HTTP is used instead of spawning
+// the CLI so the hosted serverless app can serve live data.
 //
 // Mock mode lets the entire app run on a fresh machine with no install, no
-// wallet, and no funds, which is how the demo runs. Real mode shells out to the
-// installed CLI for live Byreal data.
+// wallet, and no funds. The buyer execution commands always stay --dry-run.
 
-import { spawn } from "node:child_process";
 import poolsFixture from "../fixtures/pools.json";
 import overviewFixture from "../fixtures/overview.json";
+import { apiPoolsList, apiOverview, apiTopPositions } from "./byreal-api";
 import type { Pool, PoolAnalysis, TopPosition, Overview, RangeBand } from "./types";
 
-const MOCK = process.env.LODE_MOCK !== "0"; // default on; set LODE_MOCK=0 for live CLI
-
-export class WalletNotConfiguredError extends Error {
-  constructor() {
-    super("WALLET_NOT_CONFIGURED");
-    this.name = "WalletNotConfiguredError";
-  }
-}
-
-interface CliEnvelope<T> {
-  success: boolean;
-  data: T;
-  error?: { code?: string; message?: string };
-}
-
-function runCli<T>(args: string[]): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const child = spawn("byreal-cli", [...args, "-o", "json", "--non-interactive"], {
-      env: process.env,
-    });
-    let out = "";
-    let err = "";
-    child.stdout.on("data", (d) => (out += d.toString()));
-    child.stderr.on("data", (d) => (err += d.toString()));
-    child.on("error", (e) => reject(e));
-    child.on("close", () => {
-      try {
-        const parsed = JSON.parse(out) as CliEnvelope<T>;
-        if (!parsed.success) {
-          if (parsed.error?.code === "WALLET_NOT_CONFIGURED" || /WALLET_NOT_CONFIGURED/.test(out + err)) {
-            return reject(new WalletNotConfiguredError());
-          }
-          return reject(new Error(parsed.error?.message || "byreal-cli failed"));
-        }
-        resolve(parsed.data);
-      } catch {
-        if (/WALLET_NOT_CONFIGURED/.test(out + err)) return reject(new WalletNotConfiguredError());
-        reject(new Error(`Could not parse byreal-cli output: ${err || out}`.slice(0, 400)));
-      }
-    });
-  });
-}
+const MOCK = process.env.LODE_MOCK !== "0"; // default on; set LODE_MOCK=0 for live data
 
 // ---- mock helpers ---------------------------------------------------------
 
@@ -161,32 +121,41 @@ function buildTopPositions(pool: Pool): TopPosition[] {
 
 export const isMock = () => MOCK;
 
+// Live mode caches the pool list briefly so analyze/top-positions can resolve a
+// pool by address without refetching the whole list each call.
+let livePoolsCache: { at: number; pools: Pool[] } | null = null;
+async function livePools(): Promise<Pool[]> {
+  if (livePoolsCache && Date.now() - livePoolsCache.at < 60_000) return livePoolsCache.pools;
+  const pools = await apiPoolsList();
+  livePoolsCache = { at: Date.now(), pools };
+  return pools;
+}
+
 export async function poolsList(): Promise<Pool[]> {
-  if (MOCK) return mockPools;
-  const data = await runCli<{ pools: Pool[] }>(["pools", "list", "--sort-field", "apr24h"]);
-  return data.pools;
+  return MOCK ? mockPools : livePools();
 }
 
 export async function poolAnalyze(poolAddr: string): Promise<PoolAnalysis> {
-  if (MOCK) {
-    const pool = mockPools.find((p) => p.id === poolAddr) ?? mockPools[0];
-    return buildAnalysis(pool);
-  }
-  return runCli<PoolAnalysis>(["pools", "analyze", poolAddr]);
+  const pools = MOCK ? mockPools : await livePools();
+  const pool = pools.find((p) => p.id === poolAddr) ?? pools[0];
+  // analyze is derived from live pool metrics, the same way the CLI computes it
+  return buildAnalysis(pool);
 }
 
 export async function topPositions(poolAddr: string): Promise<TopPosition[]> {
-  if (MOCK) {
-    const pool = mockPools.find((p) => p.id === poolAddr) ?? mockPools[0];
+  const pools = MOCK ? mockPools : await livePools();
+  const pool = pools.find((p) => p.id === poolAddr) ?? pools[0];
+  if (MOCK) return buildTopPositions(pool);
+  try {
+    const live = await apiTopPositions(pool);
+    return live.length ? live : buildTopPositions(pool);
+  } catch {
     return buildTopPositions(pool);
   }
-  const data = await runCli<{ positions: TopPosition[] }>(["positions", "top-positions", "--pool", poolAddr]);
-  return data.positions;
 }
 
 export async function overview(): Promise<Overview> {
-  if (MOCK) return mockOverview;
-  return runCli<Overview>(["overview"]);
+  return MOCK ? mockOverview : apiOverview();
 }
 
 // Build the dry-run execution command a buyer runs after unlocking. We never
