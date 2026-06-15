@@ -4,7 +4,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Wallet, X } from "@phosphor-icons/react";
 
-// Short display form for a pubkey — full value always on title/copy, never
+// Short display form for a pubkey. Full value always on title/copy, never
 // truncated for on-chain use.
 const short = (pk: string) => `${pk.slice(0, 4)}...${pk.slice(-4)}`;
 

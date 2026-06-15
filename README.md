@@ -22,7 +22,31 @@ price in USDC                           run positions copy --dry-run
 list on catalog                         ledger entry settled
 ```
 
-Every signal is sealed by the merchant's key. Buyers verify the seal before paying. Every purchase lands in an on-disk ledger. That ledger is the evidence of a real agent-to-agent wallet economy.
+Every signal is sealed by the merchant's key. Buyers verify the seal before paying. Every purchase lands in a ledger. That ledger is the evidence of a real agent-to-agent wallet economy.
+
+---
+
+## Open merchant marketplace
+
+Lode is not a single merchant. Anyone can run one. The gate is deliberately two layers so the catalog does not fill with spam:
+
+1. **Economic gate.** A new merchant pays a 25 USDC registration fee on Solana mainnet at `/register`. The server verifies that payment landed on-chain to the treasury before the application is accepted, and each fee transaction can only be used once.
+2. **Approval gate.** A paid application sits in a pending queue. An admin approves it (via the admin endpoint or `scripts/approve-merchant.ts`) before the merchant's signals appear in the public catalog. A suspended merchant's signals drop out automatically.
+
+Approved merchants seal their own signals with their own ed25519 key and submit them to `/api/submit-signal`. The server re-verifies the seal and confirms the signer is an approved merchant, so nobody can submit signals as someone else. Lode keeps a 20% platform fee per sale (tracked on every ledger entry); the merchant keeps 80%.
+
+---
+
+## Trust model and verification
+
+Lode handles real money on mainnet, so payments are never taken on trust from the client:
+
+- **Buying a signal.** The buyer's wallet signs and sends the transfer client-side. The server then verifies that transaction on-chain (correct recipient, sufficient USDC or SOL, not already used) before unlocking the signal and recording the sale. A replayed or insufficient payment is rejected.
+- **Registering a merchant.** Same verification on the 25 USDC fee before the application is accepted.
+- **Private keys** are never requested, displayed, logged, or committed. Wallet signing happens entirely in the browser.
+- **Execution** is dry-run first, always. The site refuses any `--confirm` command. Opening a real position happens only in the buyer's own terminal (see below).
+
+Persistence: the registry, ledger, and submitted signals use a durable store. Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` for data that persists and stays consistent across serverless instances. Without them the app falls back to JSON files under `LODE_DATA_DIR`, which is fine for local dev and demos but is ephemeral on Vercel.
 
 ---
 
@@ -54,17 +78,22 @@ First-time visitors are asked which mode they want. The choice can be changed an
 ## Architecture
 
 ```
-lib/byreal-api.ts     fetch from api2.byreal.io (same endpoints as byreal-cli)
-lib/byreal.ts         normalizes data, mock fixture fallback
-lib/merchant.ts       mine, analyze, pick band, synthesize, seal
-lib/economy.ts        catalog, payment backends, ledger, reputation
-lib/identity.ts       ed25519 agent DID, seal and verify
-lib/mantle.ts         ERC-8004 identity registry on Mantle
-app/                  Next.js 14 dashboard (server components + client islands)
-components/           SignalCard, PayButton, RangeViz, WalletConnect, Onboarding
-scripts/buyer.ts      headless A2A loop (terminal)
-scripts/merchant.ts   standalone mine and seal
-contracts/            IdentityRegistry.sol (deployed on Mantle Sepolia)
+lib/byreal-api.ts        fetch from api2.byreal.io (same endpoints as byreal-cli)
+lib/byreal.ts            normalizes data, mock fixture fallback
+lib/merchant.ts          mine, analyze, pick band, synthesize, seal
+lib/economy.ts           catalog, payment backends, ledger, reputation
+lib/identity.ts          ed25519 agent DID, seal and verify
+lib/merchant-registry.ts merchant registration, approval, submitted signals
+lib/solana-verify.ts     server-side on-chain payment verification
+lib/store.ts             durable key-value store (Redis or file)
+lib/mantle.ts            ERC-8004 identity registry on Mantle
+app/register/            merchant registration page (25 USDC fee)
+app/api/                 register-merchant, admin/approve-merchant, submit-signal
+components/              SignalCard, PayButton, MerchantRegister, RangeViz, Onboarding
+scripts/buyer.ts         headless A2A loop (terminal)
+scripts/merchant.ts      standalone mine and seal
+scripts/approve-merchant.ts  CLI merchant approval
+contracts/               IdentityRegistry.sol (deployed on Mantle Sepolia)
 ```
 
 ---

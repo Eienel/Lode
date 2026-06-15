@@ -1,44 +1,57 @@
 "use server";
 
-import { purchase, getCatalog, readLedger, getReputation, appendLedger } from "@/lib/economy";
+import { purchase, getSignal, getCatalog, readLedger, getReputation, isTxUsed, recordOnChainPurchase } from "@/lib/economy";
 import { agentFromSeed } from "@/lib/identity";
+import { verifyPayment } from "@/lib/solana-verify";
 import { spawn } from "node:child_process";
 import type { AlphaSignal, LedgerEntry, AgentReputation } from "@/lib/types";
 
 const dashboardBuyer = agentFromSeed("buyer-dashboard");
 
-// Mock payment buy — no wallet needed, works for anyone.
-export async function buySignal(signalId: string): Promise<{
+// Mock payment buy, no wallet needed, works for anyone.
+export async function buySignal(signalId: string, forceMock?: boolean): Promise<{
   signal: AlphaSignal;
   entry: LedgerEntry;
   signatureValid: boolean;
 }> {
-  return purchase(signalId, dashboardBuyer.pubkey);
+  return purchase(signalId, dashboardBuyer.pubkey, forceMock);
 }
 
-// Real on-chain payment buy — buyer signs the tx client-side and passes the
-// confirmed signature here. We record it in the ledger as a real Solana tx.
+async function fetchSolPrice(): Promise<number> {
+  try {
+    const res = await fetch("https://api2.byreal.io/byreal/api/dex/v2/mint/list?search=SOL&page=1&pageSize=5", { cache: "no-store" });
+    const json = await res.json();
+    const records: { mintInfo: { symbol: string }; price: string }[] = json?.result?.data?.records ?? [];
+    const sol = records.find((r) => r.mintInfo.symbol === "SOL" || r.mintInfo.symbol === "WSOL");
+    if (sol && Number(sol.price) > 10) return Number(sol.price);
+  } catch {}
+  return 140;
+}
+
+// Real on-chain payment buy. The buyer signs and sends the transfer client-side
+// and passes the confirmed signature here. We do not trust it: the payment is
+// verified on-chain (correct recipient, sufficient amount, not already used)
+// before the signal is unlocked and recorded exactly once.
 export async function buySignalOnChain(
   signalId: string,
   buyerPubkey: string,
   txSignature: string,
+  forceMock?: boolean,
 ): Promise<{ signal: AlphaSignal; entry: LedgerEntry; signatureValid: boolean }> {
-  // The actual SPL/SOL transfer already happened client-side via wallet-adapter.
-  // We verify the signal seal and record the ledger entry here.
-  const { signal, signatureValid } = await purchase(signalId, buyerPubkey);
-  // Overwrite the synthetic mock tx ref with the real Solana signature.
-  const realEntry: LedgerEntry = {
-    buyerAgent: buyerPubkey,
-    merchantAgent: signal.merchantAgent,
-    signalId: signal.id,
-    pair: signal.pair,
-    amount: signal.priceUsdc,
-    txRef: txSignature,
-    backend: "solana",
-    ts: new Date().toISOString(),
-  };
-  await appendLedger(realEntry);
-  return { signal, entry: realEntry, signatureValid };
+  const signal = await getSignal(signalId, forceMock);
+  if (!signal) throw new Error("Signal not found");
+
+  if (await isTxUsed(txSignature)) {
+    throw new Error("This transaction was already used to unlock a signal");
+  }
+
+  const solPrice = await fetchSolPrice();
+  const check = await verifyPayment(txSignature, signal.merchantAgent, signal.priceUsdc, solPrice);
+  if (!check.ok) {
+    throw new Error(`Payment verification failed: ${check.reason ?? "unknown"}`);
+  }
+
+  return recordOnChainPurchase(signal, buyerPubkey, txSignature);
 }
 
 export async function refreshFeed(): Promise<{ ledger: LedgerEntry[]; reputation: AgentReputation[] }> {

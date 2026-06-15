@@ -12,7 +12,7 @@ import { apiPoolsList, apiOverview, apiTopPositions } from "./byreal-api";
 import type { Pool, PoolAnalysis, TopPosition, Overview, RangeBand } from "./types";
 
 const ENV_MOCK = process.env.LODE_MOCK !== "0"; // default on; set LODE_MOCK=0 for live data
-const MOCK = ENV_MOCK; // kept for isMock() — individual functions accept forceMock override
+const MOCK = ENV_MOCK; // kept for isMock(), individual functions accept forceMock override
 
 // ---- mock helpers ---------------------------------------------------------
 
@@ -50,8 +50,8 @@ function buildAnalysis(pool: Pool): PoolAnalysis {
   const tvlRisk = pool.tvl_usd < 150_000 ? "high" : pool.tvl_usd < 1_000_000 ? "medium" : "low";
   const volRisk = dayPct > 12 ? "high" : dayPct > 5 ? "medium" : "low";
   const summary: string[] = [];
-  if (tvlRisk !== "low") summary.push(`Pool TVL is $${Math.round(pool.tvl_usd).toLocaleString()} — higher slippage risk`);
-  summary.push(`Day price range ${dayPct.toFixed(2)}% — ${volRisk === "high" ? "elevated" : "moderate"} IL risk`);
+  if (tvlRisk !== "low") summary.push(`Pool TVL is $${Math.round(pool.tvl_usd).toLocaleString()}, higher slippage risk`);
+  summary.push(`Day price range ${dayPct.toFixed(2)}%, ${volRisk === "high" ? "elevated" : "moderate"} IL risk`);
   const proj = rangeAnalysis.find((r) => r.rangePercent === 10)!;
   const dailyFee = (1000 * (num(proj.estimatedFeeApr) / 100)) / 365;
   return {

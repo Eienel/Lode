@@ -37,9 +37,10 @@ async function fetchSolPrice(): Promise<number> {
 interface Props {
   signal: ListedSignal;
   onSuccess: (result: Awaited<ReturnType<typeof buySignal>>) => void;
+  mock?: boolean;
 }
 
-export function PayButton({ signal, onSuccess }: Props) {
+export function PayButton({ signal, onSuccess, mock }: Props) {
   const { publicKey, sendTransaction, connected } = useWallet();
   const { connection } = useConnection();
   const [token, setToken] = useState<"SOL" | "USDC">("USDC");
@@ -50,7 +51,7 @@ export function PayButton({ signal, onSuccess }: Props) {
     setState("paying");
     setError("");
     try {
-      const res = await buySignal(signal.id);
+      const res = await buySignal(signal.id, mock);
       await new Promise((r) => setTimeout(r, 600));
       onSuccess(res);
     } catch (e) {
@@ -101,7 +102,7 @@ export function PayButton({ signal, onSuccess }: Props) {
       const sig = await sendTransaction(tx, connection);
       await connection.confirmTransaction(sig, "confirmed");
 
-      const res = await buySignalOnChain(signal.id, publicKey.toBase58(), sig);
+      const res = await buySignalOnChain(signal.id, publicKey.toBase58(), sig, mock);
       onSuccess(res);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);

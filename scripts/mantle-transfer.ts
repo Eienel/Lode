@@ -21,7 +21,7 @@ async function main() {
   console.log(`deployer   ${account.address}`);
   console.log(`balance    ${Number(bal) / 1e18} MNT`);
 
-  // Send 0.05 MNT to a burn address — real on-chain Mantle economy tx showing
+  // Send 0.05 MNT to a burn address, real on-chain Mantle economy tx showing
   // the agent is economically active on Mantle, not just registered.
   const to = "0x000000000000000000000000000000000000dEaD" as `0x${string}`;
   const hash = await wallet.sendTransaction({ to, value: parseEther("0.05") });

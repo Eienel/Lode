@@ -3,21 +3,17 @@
 // every settled purchase to an on-disk ledger. That ledger is the evidence of a
 // working agent-to-agent wallet economy.
 
-import { promises as fs } from "node:fs";
-import path from "node:path";
-import os from "node:os";
 import { mineSignals, loadMerchant } from "./merchant";
 import { hashPayload, verify } from "./identity";
 import { getApprovedExternalSignals, readRegistry } from "./merchant-registry";
+import { readJson, mutate } from "./store";
 import type { AlphaSignal, LedgerEntry, AgentReputation } from "./types";
 
 // Platform fee taken on each sale. Tracked in the ledger for display; the
 // on-chain split is a v2 concern.
 const PLATFORM_FEE_PCT = 0.2;
 
-// Vercel only allows writes under /tmp; locally we keep a project data dir.
-const DATA_DIR = process.env.LODE_DATA_DIR || (process.env.VERCEL ? path.join(os.tmpdir(), "lode") : path.join(process.cwd(), "data"));
-const LEDGER_PATH = path.join(DATA_DIR, "ledger.json");
+const LEDGER_KEY = "ledger";
 
 // ---- catalog (cached so we do not re-mine on every request) ----------------
 
@@ -38,8 +34,8 @@ export async function getCatalog(force = false, forceMock?: boolean): Promise<Al
   return signals;
 }
 
-export async function getSignal(id: string): Promise<AlphaSignal | undefined> {
-  return (await getCatalog()).find((s) => s.id === id);
+export async function getSignal(id: string, forceMock?: boolean): Promise<AlphaSignal | undefined> {
+  return (await getCatalog(false, forceMock)).find((s) => s.id === id);
 }
 
 // ---- payment backends ------------------------------------------------------
@@ -85,19 +81,22 @@ export function getPayment(): Payment {
 // ---- ledger ----------------------------------------------------------------
 
 export async function readLedger(): Promise<LedgerEntry[]> {
-  try {
-    const raw = await fs.readFile(LEDGER_PATH, "utf8");
-    return JSON.parse(raw) as LedgerEntry[];
-  } catch {
-    return [];
-  }
+  return readJson<LedgerEntry[]>(LEDGER_KEY, []);
 }
 
+// Append an entry, newest first. Real on-chain entries are deduplicated by
+// txRef so the same payment can never be recorded (or used to unlock) twice.
 export async function appendLedger(entry: LedgerEntry): Promise<void> {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  const ledger = await readLedger();
-  ledger.unshift(entry);
-  await fs.writeFile(LEDGER_PATH, JSON.stringify(ledger, null, 2));
+  await mutate<LedgerEntry[]>(LEDGER_KEY, [], (ledger) => {
+    if (entry.backend === "solana" && ledger.find((e) => e.txRef === entry.txRef)) {
+      throw new Error("Transaction already recorded");
+    }
+    return [entry, ...ledger];
+  });
+}
+
+export async function isTxUsed(txRef: string): Promise<boolean> {
+  return (await readLedger()).some((e) => e.txRef === txRef);
 }
 
 // ---- the purchase: verify signature, settle payment, release full signal ----
@@ -108,12 +107,8 @@ export interface PurchaseResult {
   signatureValid: boolean;
 }
 
-export async function purchase(signalId: string, buyerAgent: string): Promise<PurchaseResult> {
-  const signal = await getSignal(signalId);
-  if (!signal) throw new Error("Signal not found");
-
-  // The buyer verifies the seal before paying: recompute the payload hash and
-  // check the merchant's signature over it.
+// Recompute and check the merchant seal over the canonical payload subset.
+export function verifySeal(signal: AlphaSignal): boolean {
   const recomputed = hashPayload({
     poolAddr: signal.poolAddr,
     pair: signal.pair,
@@ -124,8 +119,20 @@ export async function purchase(signalId: string, buyerAgent: string): Promise<Pu
     rationale: signal.rationale,
     confidence: signal.confidence,
   });
-  const signatureValid = recomputed === signal.payloadHash && verify(signal.payloadHash, signal.signature, signal.merchantAgent);
+  return recomputed === signal.payloadHash && verify(signal.payloadHash, signal.signature, signal.merchantAgent);
+}
 
+function platformFee(amount: number): number {
+  return Math.round(amount * PLATFORM_FEE_PCT * 100) / 100;
+}
+
+// Mock purchase path: no real funds, instant settlement, used when no wallet is
+// connected or in mock mode.
+export async function purchase(signalId: string, buyerAgent: string, forceMock?: boolean): Promise<PurchaseResult> {
+  const signal = await getSignal(signalId, forceMock);
+  if (!signal) throw new Error("Signal not found");
+
+  const signatureValid = verifySeal(signal);
   const payment = getPayment();
   const { txRef, backend } = await payment.pay(buyerAgent, signal.priceUsdc, signal.id);
 
@@ -138,10 +145,33 @@ export async function purchase(signalId: string, buyerAgent: string): Promise<Pu
     txRef,
     backend,
     ts: new Date().toISOString(),
-    platformFee: Math.round(signal.priceUsdc * PLATFORM_FEE_PCT * 100) / 100,
+    platformFee: platformFee(signal.priceUsdc),
   };
   await appendLedger(entry);
 
+  return { signal, entry, signatureValid };
+}
+
+// Real on-chain purchase path: the buyer's payment is verified on-chain before
+// the signal is unlocked and recorded exactly once.
+export async function recordOnChainPurchase(
+  signal: AlphaSignal,
+  buyerAgent: string,
+  txRef: string,
+): Promise<PurchaseResult> {
+  const signatureValid = verifySeal(signal);
+  const entry: LedgerEntry = {
+    buyerAgent,
+    merchantAgent: signal.merchantAgent,
+    signalId: signal.id,
+    pair: signal.pair,
+    amount: signal.priceUsdc,
+    txRef,
+    backend: "solana",
+    ts: new Date().toISOString(),
+    platformFee: platformFee(signal.priceUsdc),
+  };
+  await appendLedger(entry);
   return { signal, entry, signatureValid };
 }
 

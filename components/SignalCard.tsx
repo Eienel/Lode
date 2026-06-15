@@ -13,7 +13,7 @@ import { PayButton } from "./PayButton";
 
 type State = "locked" | "paying" | "unlocked";
 
-export function SignalCard({ signal, onPurchased }: { signal: ListedSignal; onPurchased?: () => void }) {
+export function SignalCard({ signal, onPurchased, mock }: { signal: ListedSignal; onPurchased?: () => void; mock?: boolean }) {
   const [state, setState] = useState<State>("locked");
   const [full, setFull] = useState<AlphaSignal | null>(null);
   const [valid, setValid] = useState(false);
@@ -149,7 +149,7 @@ export function SignalCard({ signal, onPurchased }: { signal: ListedSignal; onPu
             <span className="font-mono tnum">paid {signal.priceUsdc} usdc</span>
           </div>
         ) : (
-          <PayButton signal={signal} onSuccess={handleSuccess} />
+          <PayButton signal={signal} onSuccess={handleSuccess} mock={mock} />
         )}
       </div>
     </motion.div>

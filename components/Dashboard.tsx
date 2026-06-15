@@ -119,7 +119,7 @@ export function Dashboard({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05, type: "spring", stiffness: 120, damping: 20 }}
               >
-                <SignalCard signal={s} onPurchased={onPurchased} />
+                <SignalCard signal={s} onPurchased={onPurchased} mock={mock} />
               </motion.div>
             ))}
           </div>
