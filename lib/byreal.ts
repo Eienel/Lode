@@ -11,7 +11,8 @@ import overviewFixture from "../fixtures/overview.json";
 import { apiPoolsList, apiOverview, apiTopPositions } from "./byreal-api";
 import type { Pool, PoolAnalysis, TopPosition, Overview, RangeBand } from "./types";
 
-const MOCK = process.env.LODE_MOCK !== "0"; // default on; set LODE_MOCK=0 for live data
+const ENV_MOCK = process.env.LODE_MOCK !== "0"; // default on; set LODE_MOCK=0 for live data
+const MOCK = ENV_MOCK; // kept for isMock() — individual functions accept forceMock override
 
 // ---- mock helpers ---------------------------------------------------------
 
@@ -131,21 +132,23 @@ async function livePools(): Promise<Pool[]> {
   return pools;
 }
 
-export async function poolsList(): Promise<Pool[]> {
-  return MOCK ? mockPools : livePools();
+export async function poolsList(forceMock?: boolean): Promise<Pool[]> {
+  const mock = forceMock ?? MOCK;
+  return mock ? mockPools : livePools();
 }
 
-export async function poolAnalyze(poolAddr: string): Promise<PoolAnalysis> {
-  const pools = MOCK ? mockPools : await livePools();
+export async function poolAnalyze(poolAddr: string, forceMock?: boolean): Promise<PoolAnalysis> {
+  const mock = forceMock ?? MOCK;
+  const pools = mock ? mockPools : await livePools();
   const pool = pools.find((p) => p.id === poolAddr) ?? pools[0];
-  // analyze is derived from live pool metrics, the same way the CLI computes it
   return buildAnalysis(pool);
 }
 
-export async function topPositions(poolAddr: string): Promise<TopPosition[]> {
-  const pools = MOCK ? mockPools : await livePools();
+export async function topPositions(poolAddr: string, forceMock?: boolean): Promise<TopPosition[]> {
+  const mock = forceMock ?? MOCK;
+  const pools = mock ? mockPools : await livePools();
   const pool = pools.find((p) => p.id === poolAddr) ?? pools[0];
-  if (MOCK) return buildTopPositions(pool);
+  if (mock) return buildTopPositions(pool);
   try {
     const live = await apiTopPositions(pool);
     return live.length ? live : buildTopPositions(pool);
@@ -154,8 +157,9 @@ export async function topPositions(poolAddr: string): Promise<TopPosition[]> {
   }
 }
 
-export async function overview(): Promise<Overview> {
-  return MOCK ? mockOverview : apiOverview();
+export async function overview(forceMock?: boolean): Promise<Overview> {
+  const mock = forceMock ?? MOCK;
+  return mock ? mockOverview : apiOverview();
 }
 
 // Build the dry-run execution command a buyer runs after unlocking. We never

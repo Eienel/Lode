@@ -6,11 +6,15 @@ import { Dashboard } from "@/components/Dashboard";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams: { mode?: string } }) {
+  // ?mode=mock forces fixtures regardless of env; omitted uses env (LODE_MOCK=0 = live)
+  const forceMock = searchParams.mode === "mock" ? true : searchParams.mode === "live" ? false : undefined;
+  const effectiveMock = forceMock ?? isMock();
+
   const merchant = loadMerchant().pubkey;
   const [signals, ov, ledger, reputation, mantle] = await Promise.all([
-    getCatalog(),
-    overview(),
+    getCatalog(false, forceMock),
+    overview(forceMock),
     readLedger(),
     getReputation(),
     registerOnMantle(merchant, "lode-merchant"),
@@ -26,7 +30,7 @@ export default async function Home() {
       mantleAgentId={mantle.agentId}
       mantleExplorer={mantle.explorer}
       mantleRegistered={mantle.status === "registered"}
-      mock={isMock()}
+      mock={effectiveMock}
     />
   );
 }

@@ -16,15 +16,16 @@ const LEDGER_PATH = path.join(DATA_DIR, "ledger.json");
 
 // ---- catalog (cached so we do not re-mine on every request) ----------------
 
-let catalogCache: { at: number; signals: AlphaSignal[] } | null = null;
+let catalogCache: { at: number; signals: AlphaSignal[]; key: string } | null = null;
 const CATALOG_TTL_MS = 5 * 60 * 1000;
 
-export async function getCatalog(force = false): Promise<AlphaSignal[]> {
-  if (!force && catalogCache && Date.now() - catalogCache.at < CATALOG_TTL_MS) {
+export async function getCatalog(force = false, forceMock?: boolean): Promise<AlphaSignal[]> {
+  const mockKey = forceMock ? "mock" : "live";
+  if (!force && catalogCache?.key === mockKey && Date.now() - catalogCache.at < CATALOG_TTL_MS) {
     return catalogCache.signals;
   }
-  const signals = await mineSignals(6);
-  catalogCache = { at: Date.now(), signals };
+  const signals = await mineSignals(6, forceMock);
+  catalogCache = { at: Date.now(), signals, key: mockKey };
   return signals;
 }
 
@@ -83,7 +84,7 @@ export async function readLedger(): Promise<LedgerEntry[]> {
   }
 }
 
-async function appendLedger(entry: LedgerEntry): Promise<void> {
+export async function appendLedger(entry: LedgerEntry): Promise<void> {
   await fs.mkdir(DATA_DIR, { recursive: true });
   const ledger = await readLedger();
   ledger.unshift(entry);

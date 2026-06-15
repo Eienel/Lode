@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { LockSimple, ShieldCheck, Sparkle, ArrowRight, CircleNotch, Lightning } from "@phosphor-icons/react";
+import { LockSimple, ShieldCheck, Sparkle, CircleNotch, Lightning, Play } from "@phosphor-icons/react";
 import type { AlphaSignal, ListedSignal } from "@/lib/types";
+import { executeCommand } from "@/app/actions";
 import { buySignal } from "@/app/actions";
 import { usd, pct, riskLabel, riskColor } from "@/lib/format";
 import { RangeViz } from "./RangeViz";
 import { AddressChip } from "./AddressChip";
+import { PayButton } from "./PayButton";
 
 type State = "locked" | "paying" | "unlocked";
 
@@ -16,28 +18,33 @@ export function SignalCard({ signal, onPurchased }: { signal: ListedSignal; onPu
   const [full, setFull] = useState<AlphaSignal | null>(null);
   const [valid, setValid] = useState(false);
   const [tx, setTx] = useState<string>("");
+  const [execOutput, setExecOutput] = useState<string>("");
+  const [executing, setExecuting] = useState(false);
 
-  async function handleBuy() {
-    setState("paying");
+  function handleSuccess(res: Awaited<ReturnType<typeof buySignal>>) {
+    setFull(res.signal);
+    setValid(res.signatureValid);
+    setTx(res.entry.txRef);
+    setState("unlocked");
+    onPurchased?.();
+  }
+
+  async function handleExecute() {
+    if (!full) return;
+    setExecuting(true);
+    setExecOutput("");
     try {
-      const res = await buySignal(signal.id);
-      // brief settle beat so the payment step reads as a real step
-      await new Promise((r) => setTimeout(r, 650));
-      setFull(res.signal);
-      setValid(res.signatureValid);
-      setTx(res.entry.txRef);
-      setState("unlocked");
-      onPurchased?.();
-    } catch {
-      setState("locked");
+      const out = await executeCommand(full.execCommand);
+      setExecOutput(out);
+    } catch (e) {
+      setExecOutput(String(e));
+    } finally {
+      setExecuting(false);
     }
   }
 
   return (
-    <motion.div
-      layout
-      className="flex flex-col rounded-card border border-line bg-paper-raised shadow-card"
-    >
+    <motion.div layout className="flex flex-col rounded-card border border-line bg-paper-raised shadow-card">
       {/* header */}
       <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
         <div>
@@ -56,7 +63,7 @@ export function SignalCard({ signal, onPurchased }: { signal: ListedSignal; onPu
       {/* body */}
       <div className="flex flex-1 flex-col px-5 py-4">
         <div className="grid grid-cols-3 gap-3 text-center">
-          <Metric label="price" value={current(signal.currentPrice)} />
+          <Metric label="price" value={displayPrice(signal.currentPrice)} />
           <Metric label="confidence" value={`${Math.round(signal.confidence * 100)}%`} />
           <Metric label="risk" value={`${signal.riskScore}`} />
         </div>
@@ -87,11 +94,7 @@ export function SignalCard({ signal, onPurchased }: { signal: ListedSignal; onPu
                   {valid ? "seal verified, signature valid" : "seal mismatch"}
                 </div>
 
-                <RangeViz
-                  lower={full.recommendedRange.lower}
-                  upper={full.recommendedRange.upper}
-                  current={full.currentPrice}
-                />
+                <RangeViz lower={full.recommendedRange.lower} upper={full.recommendedRange.upper} current={full.currentPrice} />
 
                 <p className="text-[13px] leading-relaxed text-ink-soft">{full.rationale}</p>
 
@@ -114,6 +117,20 @@ export function SignalCard({ signal, onPurchased }: { signal: ListedSignal; onPu
                   <code className="block break-all font-mono text-[11px] leading-relaxed text-paper-raised">{full.execCommand}</code>
                 </div>
 
+                <button
+                  onClick={handleExecute}
+                  disabled={executing}
+                  className="flex w-full items-center justify-center gap-2 rounded-md border border-line bg-paper-sunken px-4 py-2 text-[12px] font-medium text-ink transition-colors hover:bg-paper-raised disabled:opacity-60"
+                >
+                  {executing ? <><CircleNotch size={13} className="animate-spin" /> running dry-run</> : <><Play size={13} weight="fill" /> run dry-run now</>}
+                </button>
+
+                {execOutput && (
+                  <pre className="max-h-48 overflow-auto rounded-md border border-line bg-paper-sunken p-3 font-mono text-[10px] leading-relaxed text-ink-soft whitespace-pre-wrap">
+                    {execOutput}
+                  </pre>
+                )}
+
                 <AddressChip value={tx} label="tx" />
               </motion.div>
             )
@@ -129,23 +146,7 @@ export function SignalCard({ signal, onPurchased }: { signal: ListedSignal; onPu
             <span className="font-mono tnum">paid {signal.priceUsdc} usdc</span>
           </div>
         ) : (
-          <button
-            onClick={handleBuy}
-            disabled={state === "paying"}
-            className="flex w-full items-center justify-center gap-2 rounded-md bg-ink px-4 py-2.5 text-[13px] font-medium text-paper transition-opacity hover:opacity-90 disabled:opacity-70"
-          >
-            {state === "paying" ? (
-              <>
-                <CircleNotch size={15} className="animate-spin" /> settling payment
-              </>
-            ) : (
-              <>
-                buy and unlock
-                <span className="font-mono tnum">{signal.priceUsdc} usdc</span>
-                <ArrowRight size={14} />
-              </>
-            )}
-          </button>
+          <PayButton signal={signal} onSuccess={handleSuccess} />
         )}
       </div>
     </motion.div>
@@ -161,6 +162,6 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function current(p: number): string {
+function displayPrice(p: number): string {
   return p < 1 ? p.toPrecision(3) : p < 1000 ? p.toFixed(2) : Math.round(p).toLocaleString();
 }

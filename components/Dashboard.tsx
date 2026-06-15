@@ -1,12 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Stack, Pulse, Receipt, FlowArrow, Cube } from "@phosphor-icons/react";
+import dynamic from "next/dynamic";
 import type { ListedSignal, LedgerEntry, AgentReputation, Overview } from "@/lib/types";
 import { SignalCard } from "./SignalCard";
 import { refreshFeed } from "@/app/actions";
 import { usd } from "@/lib/format";
+
+// WalletConnect button is client-only — wallet-adapter uses browser APIs.
+const WalletConnect = dynamic(() => import("./WalletConnect").then((m) => m.WalletConnect), { ssr: false });
 
 export function Dashboard({
   signals,
@@ -31,6 +36,7 @@ export function Dashboard({
 }) {
   const [ledger, setLedger] = useState(initialLedger);
   const [reputation, setReputation] = useState(initialRep);
+  const router = useRouter();
 
   async function onPurchased() {
     const f = await refreshFeed();
@@ -44,13 +50,38 @@ export function Dashboard({
     <div className="mx-auto max-w-7xl px-6 py-10">
       {/* header */}
       <header className="mb-10">
-        <div className="flex items-center gap-2">
-          <Cube size={20} weight="fill" className="text-accent" />
-          <span className="text-[15px] font-semibold tracking-tight">Lode</span>
-          <span className="ml-2 rounded-full border border-line bg-paper-raised px-2 py-0.5 text-[10px] text-ink-faint">
-            {mock ? "mock data" : "live byreal"}
-          </span>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Cube size={20} weight="fill" className="text-accent" />
+            <span className="text-[15px] font-semibold tracking-tight">Lode</span>
+          </div>
+
+          {/* live / mock toggle */}
+          <div className="flex items-center gap-0.5 rounded-full border border-line bg-paper-sunken p-0.5">
+            <button
+              onClick={() => router.push("/?mode=live")}
+              className={`rounded-full px-3 py-1 text-[11px] font-medium transition-colors ${
+                !mock ? "bg-ink text-paper" : "text-ink-faint hover:text-ink"
+              }`}
+            >
+              live byreal
+            </button>
+            <button
+              onClick={() => router.push("/?mode=mock")}
+              className={`rounded-full px-3 py-1 text-[11px] font-medium transition-colors ${
+                mock ? "bg-ink text-paper" : "text-ink-faint hover:text-ink"
+              }`}
+            >
+              mock data
+            </button>
+          </div>
+
+          {/* wallet connect */}
+          <div className="ml-auto">
+            <WalletConnect />
+          </div>
         </div>
+
         <h1 className="mt-5 max-w-2xl text-[28px] font-semibold leading-tight tracking-tight text-ink">
           An agent-to-agent alpha market on Byreal
         </h1>
@@ -86,7 +117,7 @@ export function Dashboard({
           </div>
         </section>
 
-        {/* sidebar: identity + economy feed */}
+        {/* sidebar */}
         <aside className="flex flex-col gap-8">
           <div>
             <SectionTitle>Agents</SectionTitle>
@@ -125,11 +156,11 @@ export function Dashboard({
                     >
                       <div className="min-w-0">
                         <div className="text-[12px] font-medium text-ink">{e.pair}</div>
-                        <div className="truncate font-mono text-[10px] text-ink-faint">{e.txRef}</div>
+                        <div className="truncate font-mono text-[10px] text-ink-faint" title={e.txRef}>{e.txRef.slice(0, 24)}…</div>
                       </div>
                       <div className="ml-3 shrink-0 text-right">
                         <div className="font-mono text-[12px] tnum text-good">{e.amount} usdc</div>
-                        <div className="text-[10px] text-ink-faint">{e.backend}</div>
+                        <div className={`text-[10px] ${e.backend === "solana" ? "text-accent font-medium" : "text-ink-faint"}`}>{e.backend}</div>
                       </div>
                     </motion.li>
                   ))}

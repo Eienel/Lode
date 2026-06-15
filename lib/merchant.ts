@@ -33,9 +33,9 @@ function priceSignal(estFeeApr: number, confidence: number, risk: number): numbe
   return Math.max(1.5, Math.round(adj * 100) / 100);
 }
 
-async function buildSignal(pool: Pool, merchantPubkey: string): Promise<AlphaSignal> {
-  const analysis = await poolAnalyze(pool.id);
-  const top = (await topPositions(pool.id))[0] ?? null;
+async function buildSignal(pool: Pool, merchantPubkey: string, forceMock?: boolean): Promise<AlphaSignal> {
+  const analysis = await poolAnalyze(pool.id, forceMock);
+  const top = (await topPositions(pool.id, forceMock))[0] ?? null;
   const band = chooseBand(analysis.rangeAnalysis);
   const estFeeApr = num(band.estimatedFeeApr);
   const lower = num(band.priceLower);
@@ -104,16 +104,16 @@ async function buildSignal(pool: Pool, merchantPubkey: string): Promise<AlphaSig
 }
 
 // Mine N signals, ranked by a yield-adjusted-for-risk-and-confidence score.
-export async function mineSignals(limit = 6): Promise<AlphaSignal[]> {
+export async function mineSignals(limit = 6, forceMock?: boolean): Promise<AlphaSignal[]> {
   const merchant = loadMerchant();
-  const pools = (await poolsList())
+  const pools = (await poolsList(forceMock))
     .filter((p) => p.tvl_usd > 20_000 && p.total_apr > 0)
     .slice(0, limit + 4);
 
   const signals: AlphaSignal[] = [];
   for (const pool of pools) {
     try {
-      signals.push(await buildSignal(pool, merchant.pubkey));
+      signals.push(await buildSignal(pool, merchant.pubkey, forceMock));
     } catch {
       // skip pools that fail to analyze
     }
