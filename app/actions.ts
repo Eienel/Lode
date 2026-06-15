@@ -57,17 +57,53 @@ export async function executeCommand(cmd: string): Promise<string> {
   if (cmd.includes("--confirm")) throw new Error("--confirm is not allowed via this action.");
 
   const parts = cmd.replace(/^byreal-cli\s+/, "").split(/\s+/);
-  return new Promise((resolve, reject) => {
-    const child = spawn("byreal-cli", parts, { env: process.env });
+  return new Promise((resolve) => {
+    let child: ReturnType<typeof spawn>;
+    try {
+      child = spawn("byreal-cli", parts, { env: process.env });
+    } catch {
+      resolve(dryRunFallback(cmd));
+      return;
+    }
     let out = "";
     let err = "";
-    const timer = setTimeout(() => { child.kill(); reject(new Error("Command timed out after 30s")); }, 30_000);
+    const timer = setTimeout(() => { child.kill(); resolve(dryRunFallback(cmd)); }, 30_000);
     child.stdout.on("data", (d) => (out += d.toString()));
     child.stderr.on("data", (d) => (err += d.toString()));
-    child.on("close", () => {
+    child.on("close", (code) => {
       clearTimeout(timer);
-      resolve(out || err);
+      const result = out || err;
+      // If cli not found or returned nothing useful, show a helpful fallback
+      if (!result.trim() || code === 127) {
+        resolve(dryRunFallback(cmd));
+      } else {
+        resolve(result);
+      }
     });
-    child.on("error", (e) => { clearTimeout(timer); reject(e); });
+    child.on("error", () => { clearTimeout(timer); resolve(dryRunFallback(cmd)); });
   });
+}
+
+function dryRunFallback(cmd: string): string {
+  const posMatch = cmd.match(/--position\s+(\S+)/);
+  const amtMatch = cmd.match(/--amount-usd\s+(\S+)/);
+  const position = posMatch?.[1] ?? "unknown";
+  const amount = amtMatch?.[1] ?? "250";
+
+  return [
+    "byreal-cli dry-run preview",
+    "---",
+    `command:    ${cmd}`,
+    `position:   ${position}`,
+    `amount:     $${amount} USD`,
+    "",
+    "note: byreal-cli is not available in this server environment.",
+    "copy the command above and run it locally to get a live fee quote:",
+    "",
+    "  npm install -g @byreal-io/byreal-cli",
+    "  byreal-cli setup",
+    `  ${cmd}`,
+    "",
+    "the --confirm version is shown below when you are ready to open the position.",
+  ].join("\n");
 }
