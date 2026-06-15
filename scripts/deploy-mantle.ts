@@ -66,12 +66,15 @@ async function main() {
   console.log(`\nregistering merchant agent...`);
   const regHash = await wallet.writeContract({ address: registry, abi, functionName: "register", args: [agentURI] });
   await pub.waitForTransactionReceipt({ hash: regHash });
-  const total = await pub.readContract({ address: registry, abi, functionName: "totalAgents" });
-  const agent = await pub.readContract({ address: registry, abi, functionName: "getAgent", args: [total] });
+  const total = (await pub.readContract({ address: registry, abi, functionName: "totalAgents" })) as bigint;
+  const agent = (await pub.readContract({ address: registry, abi, functionName: "getAgent", args: [total] })) as {
+    id: bigint;
+    agentURI: string;
+  };
 
   console.log(`register tx ${EXPLORER}/tx/${regHash}`);
-  console.log(`agent id   ${(agent as { id: bigint }).id}`);
-  console.log(`agent uri  ${(agent as { agentURI: string }).agentURI}`);
+  console.log(`agent id   ${agent.id}`);
+  console.log(`agent uri  ${agent.agentURI}`);
 
   console.log(`\nSet these on the deployment:`);
   console.log(`  MANTLE_REGISTRY=${registry}`);

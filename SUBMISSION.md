@@ -74,14 +74,23 @@ terminal.
 - Two runnable demos: the dashboard (browse, buy, watch the ledger update live)
   and the headless `npm run buyer` A2A loop.
 
-## Mantle ecosystem contribution
+## Mantle ecosystem contribution (live on testnet)
 
-Identity is portable across chains. The economy runs on Solana/Byreal, while each
-agent can register an ERC-8004 agent identity on Mantle (`lib/mantle.ts`, enabled
-with `LODE_MANTLE=1` plus `MANTLE_RPC_URL`, an EVM key, and a registry address).
-This anchors agent reputation to Mantle's emerging trustless-agent standard while
-keeping execution where the liquidity is. See `lib/mantle.ts` and
-`scripts/register-mantle.ts`.
+Identity is portable across chains. The economy runs on Solana/Byreal, while the
+agent's identity is registered as an ERC-8004 agent on Mantle. This anchors agent
+reputation to Mantle's trustless-agent standard while keeping execution where the
+liquidity is.
+
+Live on Mantle Sepolia (chain 5003):
+
+- IdentityRegistry contract: `0xb430a1cb382aa307f0aeb140bf20c4220f7dd24a`
+- Merchant agent id: `1`, URI `did:lode:5EhEKnYin2nhs3CUReoYFmaUySRaYZnNrnCqZmc4TV76#lode-merchant`
+- Deploy tx: https://explorer.sepolia.mantle.xyz/tx/0xd63ad6bd827a6d68e167600d9916829fdd0f05bcd7507d2a58a0791192a4c2a0
+- Register tx: https://explorer.sepolia.mantle.xyz/tx/0x481cb61ed8241a066f0ffb377dfe6a2e09a188ddc705f699459709a061972f14
+
+The contract is `contracts/IdentityRegistry.sol`; deploy and register with
+`npm run register-mantle` (read path) or `tsx scripts/deploy-mantle.ts` (deploy +
+register). The dashboard reads the on-chain agent id and links to the explorer.
 
 ## What is real vs mocked
 

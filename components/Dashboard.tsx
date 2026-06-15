@@ -15,6 +15,8 @@ export function Dashboard({
   reputation: initialRep,
   merchant,
   mantleAgentId,
+  mantleExplorer,
+  mantleRegistered,
   mock,
 }: {
   signals: ListedSignal[];
@@ -23,6 +25,8 @@ export function Dashboard({
   reputation: AgentReputation[];
   merchant: string;
   mantleAgentId: string;
+  mantleExplorer: string | null;
+  mantleRegistered: boolean;
   mock: boolean;
 }) {
   const [ledger, setLedger] = useState(initialLedger);
@@ -90,6 +94,8 @@ export function Dashboard({
               <AgentCard
                 rep={merchantRep ?? { agent: merchant, label: "Lode merchant", role: "merchant", sales: 0, revenue: 0 }}
                 mantleAgentId={mantleAgentId}
+                mantleExplorer={mantleExplorer}
+                mantleRegistered={mantleRegistered}
                 primary
               />
               {reputation
@@ -158,7 +164,19 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h2 className="mb-4 text-[12px] font-medium uppercase tracking-wider text-ink-faint">{children}</h2>;
 }
 
-function AgentCard({ rep, primary, mantleAgentId }: { rep: AgentReputation; primary?: boolean; mantleAgentId?: string }) {
+function AgentCard({
+  rep,
+  primary,
+  mantleAgentId,
+  mantleExplorer,
+  mantleRegistered,
+}: {
+  rep: AgentReputation;
+  primary?: boolean;
+  mantleAgentId?: string;
+  mantleExplorer?: string | null;
+  mantleRegistered?: boolean;
+}) {
   return (
     <div className={`rounded-card border p-4 shadow-card ${primary ? "border-line-strong bg-paper-raised" : "border-line bg-paper-raised"}`}>
       <div className="flex items-center justify-between">
@@ -169,11 +187,18 @@ function AgentCard({ rep, primary, mantleAgentId }: { rep: AgentReputation; prim
       </div>
       <p className="mt-1.5 break-all font-mono text-[10px] text-ink-faint">{rep.agent}</p>
       {mantleAgentId && (
-        <div className="mt-2 flex items-center gap-1.5 rounded-md bg-paper-sunken px-2 py-1">
+        <a
+          href={mantleExplorer ?? "#"}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-2 flex items-center gap-1.5 rounded-md bg-paper-sunken px-2 py-1 transition-colors hover:bg-paper-sunken/70"
+        >
           <Cube size={11} className="text-accent" />
-          <span className="text-[10px] text-ink-faint">mantle erc-8004 agent</span>
-          <span className="ml-auto font-mono text-[10px] text-ink">#{mantleAgentId.slice(0, 10)}</span>
-        </div>
+          <span className="text-[10px] text-ink-faint">
+            {mantleRegistered ? "mantle erc-8004, registered" : "mantle erc-8004"}
+          </span>
+          <span className="ml-auto font-mono text-[10px] text-ink">agent #{mantleAgentId}</span>
+        </a>
       )}
       {rep.role === "merchant" && (
         <div className="mt-3 flex gap-4">

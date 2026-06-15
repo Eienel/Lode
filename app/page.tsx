@@ -24,6 +24,8 @@ export default async function Home() {
       reputation={reputation}
       merchant={merchant}
       mantleAgentId={mantle.agentId}
+      mantleExplorer={mantle.explorer}
+      mantleRegistered={mantle.status === "registered"}
       mock={isMock()}
     />
   );
