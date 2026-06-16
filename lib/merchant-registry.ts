@@ -43,6 +43,11 @@ export async function registerMerchant(
   return record!;
 }
 
+// How many signals a merchant has currently listed, used to enforce their cap.
+export async function countSignalsForMerchant(pubkey: string): Promise<number> {
+  return (await readExternalSignals()).filter((s) => s.merchantAgent === pubkey).length;
+}
+
 export async function approveMerchant(pubkey: string): Promise<MerchantRecord> {
   let record: MerchantRecord | undefined;
   await mutate<MerchantRecord[]>(MERCHANTS_KEY, [], (records) => {
@@ -92,6 +97,18 @@ export async function appendExternalSignal(signal: ExternalSignal): Promise<void
 // merchant's signals drop out of the catalog automatically.
 export async function getApprovedExternalSignals(): Promise<ExternalSignal[]> {
   const [signals, approved] = await Promise.all([readExternalSignals(), getApprovedMerchants()]);
-  const approvedPubkeys = new Set(approved.map((m) => m.pubkey));
-  return signals.filter((s) => approvedPubkeys.has(s.merchantAgent));
+  const capByMerchant = new Map(approved.map((m) => [m.pubkey, m.signalCap]));
+  // Newest first, then keep only up to each approved merchant's signal cap.
+  const sorted = [...signals]
+    .filter((s) => capByMerchant.has(s.merchantAgent))
+    .sort((a, b) => (b.submittedAt ?? "").localeCompare(a.submittedAt ?? ""));
+  const counts = new Map<string, number>();
+  const out: ExternalSignal[] = [];
+  for (const s of sorted) {
+    const used = counts.get(s.merchantAgent) ?? 0;
+    if (used >= (capByMerchant.get(s.merchantAgent) ?? 0)) continue;
+    counts.set(s.merchantAgent, used + 1);
+    out.push(s);
+  }
+  return out;
 }

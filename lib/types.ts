@@ -165,6 +165,19 @@ export interface MerchantRecord {
   registeredAt: string;
   approvedAt?: string;
   feeSharePct: number; // share the merchant keeps, e.g. 80 (platform takes 20)
+  tier: number; // USD paid at registration (10 or 25)
+  signalCap: number; // max signals this merchant may list (2 or 5)
+}
+
+// Registration tiers: pay more to list more signals on the dashboard.
+export const MERCHANT_TIERS: { usd: number; signals: number; label: string }[] = [
+  { usd: 10, signals: 2, label: "Starter" },
+  { usd: 25, signals: 5, label: "Pro" },
+];
+
+export function signalCapForTier(usd: number): number {
+  const tier = MERCHANT_TIERS.find((t) => t.usd === usd);
+  return tier ? tier.signals : 0;
 }
 
 // A pre-signed signal submitted by an approved external merchant.

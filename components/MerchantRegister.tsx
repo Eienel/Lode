@@ -15,6 +15,7 @@ import {
   createTransferInstruction,
 } from "@solana/spl-token";
 import { ShieldCheck, CircleNotch, ArrowRight, Check } from "@phosphor-icons/react";
+import { MERCHANT_TIERS } from "@/lib/types";
 
 const WalletConnect = dynamic(() => import("./WalletConnect").then((m) => m.WalletConnect), { ssr: false });
 
@@ -22,7 +23,6 @@ const USDC_MINT = new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
 const TREASURY = new PublicKey(
   process.env.NEXT_PUBLIC_LODE_TREASURY ?? "5EhEKnYin2nhs3CUReoYFmaUySRaYZnNrnCqZmc4TV76",
 );
-const FEE_USDC = 25;
 
 type State = "idle" | "paying" | "confirming" | "submitting" | "done" | "error" | "exists";
 
@@ -32,8 +32,11 @@ export function MerchantRegister() {
   const [label, setLabel] = useState("");
   const [bio, setBio] = useState("");
   const [agentPubkey, setAgentPubkey] = useState("");
+  const [tier, setTier] = useState<number>(MERCHANT_TIERS[0].usd);
   const [state, setState] = useState<State>("idle");
   const [error, setError] = useState("");
+
+  const feeUsdc = tier;
 
   const effectiveAgent = agentPubkey.trim() || publicKey?.toBase58() || "";
   const canSubmit = connected && label.trim() && bio.trim() && effectiveAgent && state === "idle";
@@ -50,7 +53,7 @@ export function MerchantRegister() {
       if (!treasuryAtaInfo) {
         tx.add(createAssociatedTokenAccountInstruction(publicKey, treasuryAta, TREASURY, USDC_MINT));
       }
-      const amount = BigInt(FEE_USDC * 1_000_000);
+      const amount = BigInt(feeUsdc * 1_000_000);
       tx.add(createTransferInstruction(buyerAta, treasuryAta, publicKey, amount));
 
       const { blockhash } = await connection.getLatestBlockhash();
@@ -65,7 +68,7 @@ export function MerchantRegister() {
       const res = await fetch("/api/register-merchant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pubkey: effectiveAgent, label: label.trim(), bio: bio.trim(), tx: sig }),
+        body: JSON.stringify({ pubkey: effectiveAgent, label: label.trim(), bio: bio.trim(), tx: sig, tier }),
       });
       if (res.status === 409) {
         setState("exists");
@@ -150,10 +153,31 @@ export function MerchantRegister() {
             />
           </Field>
 
+          <Field label="tier">
+            <div className="flex flex-col gap-2">
+              {MERCHANT_TIERS.map((t) => (
+                <button
+                  key={t.usd}
+                  type="button"
+                  onClick={() => setTier(t.usd)}
+                  className={`flex items-center justify-between rounded-md border px-3 py-2.5 text-left transition-colors ${
+                    tier === t.usd ? "border-ink bg-paper" : "border-line bg-paper-sunken hover:border-line-strong"
+                  }`}
+                >
+                  <div>
+                    <span className="text-[13px] font-semibold text-ink">{t.label}</span>
+                    <p className="text-[11px] text-ink-soft">list up to {t.signals} signals on the dashboard</p>
+                  </div>
+                  <span className="font-mono text-[13px] tnum text-ink">{t.usd} usdc</span>
+                </button>
+              ))}
+            </div>
+          </Field>
+
           <div className="flex items-start gap-1.5 rounded-md bg-paper-sunken px-2.5 py-2 text-[11px] leading-relaxed text-ink-soft">
             <ShieldCheck size={12} className="mt-0.5 shrink-0 text-good" />
             <span>
-              You pay {FEE_USDC} USDC on Solana mainnet to register. Lode keeps a 20% platform fee on each signal you sell; you keep 80%.
+              You pay {feeUsdc} USDC on Solana mainnet to register. Lode keeps a 20% platform fee on each signal you sell; you keep 80%.
             </span>
           </div>
 
@@ -170,7 +194,7 @@ export function MerchantRegister() {
             ) : (
               <>
                 pay and register
-                <span className="font-mono tnum">{FEE_USDC} usdc</span>
+                <span className="font-mono tnum">{feeUsdc} usdc</span>
                 <ArrowRight size={14} />
               </>
             )}

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { findMerchant, appendExternalSignal } from "@/lib/merchant-registry";
+import { findMerchant, appendExternalSignal, countSignalsForMerchant } from "@/lib/merchant-registry";
 import { hashPayload, verify } from "@/lib/identity";
 import type { AlphaSignal } from "@/lib/types";
 
@@ -15,6 +15,14 @@ export async function POST(req: Request) {
     const merchant = await findMerchant(signal.merchantAgent);
     if (!merchant || merchant.status !== "approved") {
       return NextResponse.json({ error: "Merchant not approved" }, { status: 403 });
+    }
+    // Enforce the tier signal cap (unless this id is an update to an existing one).
+    const current = await countSignalsForMerchant(signal.merchantAgent);
+    if (current >= merchant.signalCap) {
+      return NextResponse.json(
+        { error: `Signal cap reached (${merchant.signalCap}). Upgrade tier to list more.` },
+        { status: 403 },
+      );
     }
     const recomputed = hashPayload({
       poolAddr: signal.poolAddr,

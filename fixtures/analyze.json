@@ -127,8 +127,8 @@
       "tvlRisk": "high",
       "volatilityRisk": "low",
       "summary": [
-        "Pool has low TVL ($86698) — higher slippage risk",
-        "Day price range 4.01% — moderate IL risk"
+        "Pool has low TVL ($86698), higher slippage risk",
+        "Day price range 4.01%, moderate IL risk"
       ]
     },
     "investmentProjection": {

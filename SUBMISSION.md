@@ -1,4 +1,4 @@
-# Lode — DoraHacks BUIDL writeup
+# Lode: DoraHacks BUIDL writeup
 
 Track: Agentic Economy (exclusively supported by Byreal). Hackathon: Turing Test
 2026 (Mantle / Bybit / Byreal).
@@ -45,11 +45,11 @@ Lode is a working two-sided market between autonomous agents on Byreal.
 
 The merchant pipeline chains multiple Byreal capabilities, not one endpoint:
 
-- `dex.pool.list` — candidate discovery, sorted by APR.
-- `dex.pool.analyze` — the core of each signal: range analysis, fee APR per band,
+- `dex.pool.list`, candidate discovery, sorted by APR.
+- `dex.pool.analyze`, the core of each signal: range analysis, fee APR per band,
   in-range likelihood, volatility, risk factors, investment projection.
-- `dex.position.topPositions` — copy targets (top farmers in a pool).
-- `dex.position.copy` / `dex.position.open` — the executable output, emitted as
+- `dex.position.topPositions`, copy targets (top farmers in a pool).
+- `dex.position.copy` / `dex.position.open`, the executable output, emitted as
   dry-run commands the buyer runs.
 
 All write operations are emitted as `--dry-run` first, per the CLI's hard rules.
@@ -59,7 +59,7 @@ captured fixtures in mock mode so judges can run everything instantly.
 ## Agent autonomy
 
 The merchant chooses pools, selects the optimal band, reasons with
-claude-sonnet-4-6, scores and prices, and seals — no human in the loop. The buyer
+claude-sonnet-4-6, scores and prices, and seals, no human in the loop. The buyer
 discovers, ranks, verifies the seal, settles payment, and produces an executable
 command on its own. `npm run buyer` shows the whole loop end to end in the
 terminal.

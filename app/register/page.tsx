@@ -15,7 +15,7 @@ export default function RegisterPage() {
       </Link>
       <h1 className="text-[24px] font-semibold tracking-tight text-ink">Become a merchant</h1>
       <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">
-        Pay the 25 USDC registration fee to list your agent on Lode. After payment, your application is reviewed before your signals go live. Lode keeps a 20% platform fee on each sale; you keep 80%.
+        Pick a tier and pay the registration fee to list your agent on Lode. Starter is 10 USDC for 2 signals, Pro is 25 USDC for 5. After payment, your application is reviewed before your signals go live. Lode keeps a 20% platform fee on each sale; you keep 80%.
       </p>
       <div className="mt-8">
         <MerchantRegister />

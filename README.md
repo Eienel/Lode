@@ -30,10 +30,10 @@ Every signal is sealed by the merchant's key. Buyers verify the seal before payi
 
 Lode is not a single merchant. Anyone can run one. The gate is deliberately two layers so the catalog does not fill with spam:
 
-1. **Economic gate.** A new merchant pays a 25 USDC registration fee on Solana mainnet at `/register`. The server verifies that payment landed on-chain to the treasury before the application is accepted, and each fee transaction can only be used once.
+1. **Economic gate.** A new merchant picks a tier and pays the fee on Solana mainnet at `/register`. Tiers are Starter (10 USDC, list up to 2 signals) and Pro (25 USDC, list up to 5). The server verifies the payment landed on-chain to the treasury for the chosen tier before the application is accepted, and each fee transaction can only be used once.
 2. **Approval gate.** A paid application sits in a pending queue. An admin approves it (via the admin endpoint or `scripts/approve-merchant.ts`) before the merchant's signals appear in the public catalog. A suspended merchant's signals drop out automatically.
 
-Approved merchants seal their own signals with their own ed25519 key and submit them to `/api/submit-signal`. The server re-verifies the seal and confirms the signer is an approved merchant, so nobody can submit signals as someone else. Lode keeps a 20% platform fee per sale (tracked on every ledger entry); the merchant keeps 80%.
+Approved merchants seal their own signals with their own ed25519 key and submit them to `/api/submit-signal`. The server re-verifies the seal, confirms the signer is an approved merchant, and enforces the tier signal cap, so nobody can submit signals as someone else or exceed what they paid for. Lode keeps a 20% platform fee per sale (tracked on every ledger entry); the merchant keeps 80%.
 
 ---
 
@@ -63,13 +63,13 @@ First-time visitors are asked which mode they want. The choice can be changed an
 ## What is live on mainnet and testnet
 
 **Solana mainnet**
-- Signal payments in USDC or SOL go to the merchant agent pubkey `5EhEKnYin2nhs3CUReoYFmaUySRaYZnNrnCqZmc4TV76`
+- Signal payments and merchant registration fees in USDC or SOL go to the house merchant treasury `CHii3jRQguQHeNECGkBLnc3noaA68NC2fVc11yEN8QEv`
 - USDC mint: `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`
-- Real tx signatures land in the economy ledger, marked "solana"
+- Payments are verified on-chain server-side before a signal unlocks; real tx signatures land in the economy ledger, marked "solana"
 
 **Mantle Sepolia testnet (chain 5003)**
 - IdentityRegistry contract: `0xb430a1cb382aa307f0aeb140bf20c4220f7dd24a`
-- Merchant agent registered as ERC-8004 agent #1, URI `did:lode:5EhEKnYin2nhs3CUReoYFmaUySRaYZnNrnCqZmc4TV76#lode-merchant`
+- The ERC-8004 identity was registered as agent #1 with URI `did:lode:5EhEKnYin2nhs3CUReoYFmaUySRaYZnNrnCqZmc4TV76#lode-merchant` to demonstrate on-chain agent identity. That registration is immutable; the live Solana payment wallet above is the current house merchant.
 - Register tx: https://explorer.sepolia.mantle.xyz/tx/0x481cb61ed8241a066f0ffb377dfe6a2e09a188ddc705f699459709a061972f14
 - Economy tx (0.05 MNT): https://explorer.sepolia.mantle.xyz/tx/0x1951aa812f04f18502ea71531928216e1c3d3f441f6a93043a1a1604593491ea
 
