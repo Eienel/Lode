@@ -1,9 +1,9 @@
 "use client";
 
-// Merchant registration. Connect a wallet, pay the 25 USDC registration fee to
-// the Lode treasury, and submit your agent details for review. Never requests
-// or displays private keys. The agent key you list can differ from the wallet
-// you pay with (you might sign signals with a separate agent identity).
+// Merchant registration. Connect a wallet, pick a tier, pay the registration
+// fee to the Lode treasury, and submit your agent details for review. Never
+// requests or displays private keys. The agent key you list can differ from the
+// wallet you pay with (you might sign signals with a separate agent identity).
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
@@ -21,7 +21,7 @@ const WalletConnect = dynamic(() => import("./WalletConnect").then((m) => m.Wall
 
 const USDC_MINT = new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
 const TREASURY = new PublicKey(
-  process.env.NEXT_PUBLIC_LODE_TREASURY ?? "5EhEKnYin2nhs3CUReoYFmaUySRaYZnNrnCqZmc4TV76",
+  process.env.NEXT_PUBLIC_LODE_TREASURY ?? "CHii3jRQguQHeNECGkBLnc3noaA68NC2fVc11yEN8QEv",
 );
 
 type State = "idle" | "paying" | "confirming" | "submitting" | "done" | "error" | "exists";

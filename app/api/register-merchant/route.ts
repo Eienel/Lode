@@ -3,7 +3,7 @@ import { registerMerchant } from "@/lib/merchant-registry";
 import { verifyPayment } from "@/lib/solana-verify";
 import { MERCHANT_TIERS, signalCapForTier } from "@/lib/types";
 
-const TREASURY = process.env.NEXT_PUBLIC_LODE_TREASURY ?? "5EhEKnYin2nhs3CUReoYFmaUySRaYZnNrnCqZmc4TV76";
+const TREASURY = process.env.NEXT_PUBLIC_LODE_TREASURY ?? "CHii3jRQguQHeNECGkBLnc3noaA68NC2fVc11yEN8QEv";
 
 async function fetchSolPrice(): Promise<number> {
   try {

@@ -86,9 +86,14 @@ export async function readExternalSignals(): Promise<ExternalSignal[]> {
   return readJson<ExternalSignal[]>(SIGNALS_KEY, []);
 }
 
-export async function appendExternalSignal(signal: ExternalSignal): Promise<void> {
+// Append a submitted signal. The tier cap is enforced inside the same mutation
+// as the write so concurrent submits cannot race past the cap (check and append
+// are atomic per key).
+export async function appendExternalSignal(signal: ExternalSignal, signalCap: number): Promise<void> {
   await mutate<ExternalSignal[]>(SIGNALS_KEY, [], (existing) => {
     if (existing.find((s) => s.id === signal.id)) throw new Error("Signal id already exists");
+    const count = existing.filter((s) => s.merchantAgent === signal.merchantAgent).length;
+    if (count >= signalCap) throw new Error("Signal cap reached");
     return [...existing, signal];
   });
 }

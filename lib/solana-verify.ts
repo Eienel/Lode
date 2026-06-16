@@ -13,7 +13,7 @@ const RPC = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
 
 // Allow SOL payments to undershoot the USD-converted target a little, since the
 // client converts at a slightly different SOL price than we might read now.
-const SOL_TOLERANCE = 0.9;
+const SOL_TOLERANCE = 0.95;
 
 let conn: Connection | null = null;
 function connection(): Connection {

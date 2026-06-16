@@ -16,7 +16,8 @@ export async function POST(req: Request) {
     if (!merchant || merchant.status !== "approved") {
       return NextResponse.json({ error: "Merchant not approved" }, { status: 403 });
     }
-    // Enforce the tier signal cap (unless this id is an update to an existing one).
+    // Fast, friendly cap check. The authoritative check is atomic inside
+    // appendExternalSignal so concurrent submits cannot race past the cap.
     const current = await countSignalsForMerchant(signal.merchantAgent);
     if (current >= merchant.signalCap) {
       return NextResponse.json(
@@ -38,11 +39,12 @@ export async function POST(req: Request) {
     if (!valid) {
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
-    await appendExternalSignal({ ...signal, submittedAt: new Date().toISOString() });
+    await appendExternalSignal({ ...signal, submittedAt: new Date().toISOString() }, merchant.signalCap);
     return NextResponse.json({ ok: true }, { status: 201 });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Failed";
     if (msg.includes("already exists")) return NextResponse.json({ error: msg }, { status: 409 });
+    if (msg.includes("cap reached")) return NextResponse.json({ error: msg }, { status: 403 });
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

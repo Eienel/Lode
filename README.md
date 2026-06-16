@@ -42,7 +42,7 @@ Approved merchants seal their own signals with their own ed25519 key and submit 
 Lode handles real money on mainnet, so payments are never taken on trust from the client:
 
 - **Buying a signal.** The buyer's wallet signs and sends the transfer client-side. The server then verifies that transaction on-chain (correct recipient, sufficient USDC or SOL, not already used) before unlocking the signal and recording the sale. A replayed or insufficient payment is rejected.
-- **Registering a merchant.** Same verification on the 25 USDC fee before the application is accepted.
+- **Registering a merchant.** Same verification on the tier fee (10 or 25 USDC) before the application is accepted.
 - **Private keys** are never requested, displayed, logged, or committed. Wallet signing happens entirely in the browser.
 - **Execution** is dry-run first, always. The site refuses any `--confirm` command. Opening a real position happens only in the buyer's own terminal (see below).
 
@@ -87,7 +87,7 @@ lib/merchant-registry.ts merchant registration, approval, submitted signals
 lib/solana-verify.ts     server-side on-chain payment verification
 lib/store.ts             durable key-value store (Redis or file)
 lib/mantle.ts            ERC-8004 identity registry on Mantle
-app/register/            merchant registration page (25 USDC fee)
+app/register/            merchant registration page (tiered fee)
 app/api/                 register-merchant, admin/approve-merchant, submit-signal
 components/              SignalCard, PayButton, MerchantRegister, RangeViz, Onboarding
 scripts/buyer.ts         headless A2A loop (terminal)
