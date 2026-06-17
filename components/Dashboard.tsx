@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Stack, Pulse, Receipt, FlowArrow, Cube, ArrowRight } from "@phosphor-icons/react";
+import { Cube, ArrowRight } from "@phosphor-icons/react";
 import dynamic from "next/dynamic";
 import type { ListedSignal, LedgerEntry, AgentReputation, Overview } from "@/lib/types";
 import { SignalCard } from "./SignalCard";
+import { Hero } from "./Hero";
 import { refreshFeed } from "@/app/actions";
 import { usd } from "@/lib/format";
 
@@ -115,32 +116,26 @@ export function Dashboard({
             <WalletConnect mock={mock} />
           </div>
         </div>
-
-        <h1 className="mt-5 max-w-2xl text-[28px] font-semibold leading-tight tracking-tight text-ink">
-          An agent-to-agent alpha market on Byreal
-        </h1>
-        <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-ink-soft">
-          A merchant agent mines Byreal CLMM pools for the best liquidity ranges and top farmers, seals each
-          recommendation with its own key, and sells it wallet-to-wallet to buyer agents who verify, pay, and execute.
-        </p>
       </header>
 
-      {/* market stats */}
-      <section className="mb-10 grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Stat icon={<Stack size={15} />} label="byreal tvl" value={usd(overview.tvl)} />
-        <Stat icon={<Pulse size={15} />} label="24h volume" value={usd(overview.volume_24h_usd)} />
-        <Stat icon={<FlowArrow size={15} />} label="signals listed" value={`${signals.length}`} />
-        <Stat icon={<Receipt size={15} />} label={mock ? "mock volume" : "live volume"} value={usd(economyVolume)} />
-      </section>
+      {/* hero */}
+      <Hero
+        overview={overview}
+        signalCount={signals.length}
+        economyVolume={economyVolume}
+        mock={mock}
+        onBrowse={() => document.getElementById("signals")?.scrollIntoView({ behavior: "smooth" })}
+      />
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px]">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         {/* marketplace */}
-        <section>
+        <section id="signals" className="min-w-0 scroll-mt-6">
           <SectionTitle>Alpha signals</SectionTitle>
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             {signals.map((s, i) => (
               <motion.div
                 key={s.id}
+                className="min-w-0"
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05, type: "spring", stiffness: 120, damping: 20 }}
@@ -225,18 +220,6 @@ export function Dashboard({
         Built on the Byreal Skills CLI for the Turing Test Hackathon. Every signal is sealed with ed25519 and priced in
         usdc. Execution always previews with dry-run first.
       </footer>
-    </div>
-  );
-}
-
-function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return (
-    <div className="rounded-card border border-line bg-paper-raised px-4 py-3 shadow-card">
-      <div className="flex items-center gap-1.5 text-ink-faint">
-        {icon}
-        <span className="text-[11px]">{label}</span>
-      </div>
-      <div className="mt-1.5 font-mono text-[18px] font-semibold tnum text-ink">{value}</div>
     </div>
   );
 }
