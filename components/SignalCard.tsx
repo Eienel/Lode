@@ -52,7 +52,7 @@ export function SignalCard({ signal, onPurchased, mock }: { signal: ListedSignal
             <h3 className="text-[15px] font-semibold tracking-tight text-ink">{signal.pair}</h3>
             <span className={`text-[11px] font-medium ${riskColor(signal.riskScore)}`}>{riskLabel(signal.riskScore)}</span>
           </div>
-          <p className="mt-0.5 font-mono text-[10px] text-ink-faint">{signal.poolAddr}</p>
+          <p className="mt-0.5 truncate font-mono text-[10px] text-ink-faint">{signal.poolAddr}</p>
         </div>
         <div className="shrink-0 text-right">
           <div className="font-mono text-[16px] font-semibold tnum text-good">{pct(signal.estFeeApr)}</div>
