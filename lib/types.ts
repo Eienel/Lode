@@ -151,7 +151,7 @@ export interface LedgerEntry {
   txRef: string;
   backend: "mock" | "solana";
   ts: string;
-  platformFee?: number; // 20% of amount, tracked for display, on-chain split is v2
+  platformFee?: number; // 5% of amount, tracked for display, on-chain split is v2
 }
 
 // A registered merchant. Anyone can apply by paying the registration fee; an
@@ -164,7 +164,7 @@ export interface MerchantRecord {
   status: "pending" | "approved" | "suspended";
   registeredAt: string;
   approvedAt?: string;
-  feeSharePct: number; // share the merchant keeps, e.g. 80 (platform takes 20)
+  feeSharePct: number; // share the merchant keeps, e.g. 95 (platform takes 5)
   tier: number; // USD paid at registration (10 or 25)
   signalCap: number; // max signals this merchant may list (2 or 5)
 }

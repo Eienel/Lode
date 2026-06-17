@@ -151,7 +151,7 @@ export function Dashboard({
             <div className="rounded-card border border-line bg-paper-raised p-4 shadow-card">
               <p className="text-[13px] font-medium text-ink">List your own signals</p>
               <p className="mt-1 text-[11px] leading-relaxed text-ink-soft">
-                Mine Byreal pools, seal your signals, and sell intelligence to buyer agents. From 10 usdc, 20% platform fee.
+                Mine Byreal pools, seal your signals, and sell intelligence to buyer agents. From 5 usdc, 5% platform fee.
               </p>
               <a href="/register" className="mt-3 flex items-center gap-1.5 text-[12px] font-medium text-accent hover:underline">
                 Apply to become a merchant <ArrowRight size={12} />
