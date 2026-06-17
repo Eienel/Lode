@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Wallet, X } from "@phosphor-icons/react";
@@ -8,9 +9,17 @@ import { Wallet, X } from "@phosphor-icons/react";
 // truncated for on-chain use.
 const short = (pk: string) => `${pk.slice(0, 4)}...${pk.slice(-4)}`;
 
-export function WalletConnect() {
+export function WalletConnect({ mock = false }: { mock?: boolean }) {
   const { publicKey, disconnect, connected } = useWallet();
   const { setVisible } = useWalletModal();
+
+  // In mock mode no wallet should be live: tear down any session so payments
+  // always fall through the mock path, and hide the connect control entirely.
+  useEffect(() => {
+    if (mock && connected) disconnect();
+  }, [mock, connected, disconnect]);
+
+  if (mock) return null;
 
   if (connected && publicKey) {
     return (

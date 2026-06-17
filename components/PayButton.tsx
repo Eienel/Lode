@@ -62,8 +62,13 @@ export function PayButton({ signal, onSuccess, mock }: Props) {
     }
   }
 
+  // On-chain only when a wallet is connected AND we are not in mock mode. This
+  // prevents a connected wallet from triggering a real transfer while the user
+  // is browsing mock data.
+  const onChain = connected && !mock;
+
   async function handleOnChainBuy() {
-    if (!publicKey) return handleMockBuy();
+    if (mock || !publicKey) return handleMockBuy();
     setState("paying");
     setError("");
     try {
@@ -119,8 +124,8 @@ export function PayButton({ signal, onSuccess, mock }: Props) {
 
   return (
     <div className="space-y-2">
-      {/* Mainnet warning shown only when wallet is connected */}
-      {connected && (
+      {/* Mainnet warning shown only when paying on-chain */}
+      {onChain && (
         <div className="flex items-start gap-1.5 rounded-md bg-paper-sunken px-2.5 py-2 text-[11px] leading-relaxed text-ink-soft">
           <ShieldCheck size={12} className="mt-0.5 shrink-0 text-good" />
           <span>
@@ -129,8 +134,8 @@ export function PayButton({ signal, onSuccess, mock }: Props) {
         </div>
       )}
 
-      {/* Token picker: only shown when wallet is connected */}
-      {connected && (
+      {/* Token picker: only shown when paying on-chain */}
+      {onChain && (
         <div className="flex items-center gap-0.5 rounded-md border border-line bg-paper-sunken p-0.5">
           {(["USDC", "SOL"] as const).map((t) => (
             <button
@@ -147,18 +152,18 @@ export function PayButton({ signal, onSuccess, mock }: Props) {
       )}
 
       <button
-        onClick={connected ? handleOnChainBuy : handleMockBuy}
+        onClick={onChain ? handleOnChainBuy : handleMockBuy}
         disabled={isBusy}
         className="flex w-full items-center justify-center gap-2 rounded-md bg-ink px-4 py-2.5 text-[13px] font-medium text-paper transition-opacity hover:opacity-90 disabled:opacity-70"
       >
         {isBusy ? (
           <>
             <CircleNotch size={15} className="animate-spin" />
-            {state === "confirming" ? "confirming on-chain" : connected ? "sending transaction" : "settling payment"}
+            {state === "confirming" ? "confirming on-chain" : onChain ? "sending transaction" : "settling payment"}
           </>
         ) : (
           <>
-            {connected ? "pay on-chain and unlock" : "buy and unlock"}
+            {onChain ? "pay on-chain and unlock" : "buy and unlock"}
             <span className="font-mono tnum">{signal.priceUsdc} usdc</span>
             <ArrowRight size={14} />
           </>

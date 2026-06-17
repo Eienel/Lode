@@ -84,9 +84,9 @@ export function Dashboard({
             </button>
           </div>
 
-          {/* wallet connect */}
+          {/* wallet connect (live mode only) */}
           <div className="ml-auto">
-            <WalletConnect />
+            <WalletConnect mock={mock} />
           </div>
         </div>
 
