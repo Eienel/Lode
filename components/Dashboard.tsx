@@ -53,6 +53,11 @@ export function Dashboard({
 
   const merchantRep = reputation.find((r) => r.agent === merchant);
 
+  // Show the economy for the mode you are viewing: live = real on-chain (solana)
+  // earnings, mock = mock settlements. Each entry is tagged by backend already.
+  const modeLedger = ledger.filter((e) => (mock ? e.backend === "mock" : e.backend === "solana"));
+  const economyVolume = modeLedger.reduce((s, e) => s + e.amount, 0);
+
   return (
     <div className="mx-auto max-w-7xl px-6 py-10">
       <Onboarding onChoose={handleModeChoice} />
@@ -104,7 +109,7 @@ export function Dashboard({
         <Stat icon={<Stack size={15} />} label="byreal tvl" value={usd(overview.tvl)} />
         <Stat icon={<Pulse size={15} />} label="24h volume" value={usd(overview.volume_24h_usd)} />
         <Stat icon={<FlowArrow size={15} />} label="signals listed" value={`${signals.length}`} />
-        <Stat icon={<Receipt size={15} />} label="economy volume" value={usd(ledger.reduce((s, e) => s + e.amount, 0))} />
+        <Stat icon={<Receipt size={15} />} label={mock ? "mock volume" : "live volume"} value={usd(economyVolume)} />
       </section>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px]">
@@ -165,13 +170,13 @@ export function Dashboard({
           <div>
             <SectionTitle>Economy ledger</SectionTitle>
             <div className="rounded-card border border-line bg-paper-raised shadow-card">
-              {ledger.length === 0 ? (
+              {modeLedger.length === 0 ? (
                 <p className="px-4 py-6 text-center text-[12px] text-ink-faint">
-                  no purchases yet. buy a signal to settle the first agent-to-agent trade.
+                  no {mock ? "mock" : "live"} purchases yet. buy a signal to settle the first agent-to-agent trade.
                 </p>
               ) : (
                 <ul className="divide-y divide-line">
-                  {ledger.slice(0, 8).map((e, i) => (
+                  {modeLedger.slice(0, 8).map((e, i) => (
                     <motion.li
                       key={e.txRef + i}
                       initial={{ opacity: 0, x: -6 }}
