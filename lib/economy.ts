@@ -11,7 +11,7 @@ import type { AlphaSignal, LedgerEntry, AgentReputation } from "./types";
 
 // Platform fee taken on each sale. Tracked in the ledger for display; the
 // on-chain split is a v2 concern.
-const PLATFORM_FEE_PCT = 0.2;
+const PLATFORM_FEE_PCT = 0.05;
 
 const LEDGER_KEY = "ledger";
 

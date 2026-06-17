@@ -30,10 +30,10 @@ Every signal is sealed by the merchant's key. Buyers verify the seal before payi
 
 Lode is not a single merchant. Anyone can run one. The gate is deliberately two layers so the catalog does not fill with spam:
 
-1. **Economic gate.** A new merchant picks a tier and pays the fee on Solana mainnet at `/register`. Tiers are Starter (10 USDC, list up to 2 signals) and Pro (25 USDC, list up to 5). The server verifies the payment landed on-chain to the treasury for the chosen tier before the application is accepted, and each fee transaction can only be used once.
+1. **Economic gate.** A new merchant picks a tier and pays the fee on Solana mainnet at `/register`. Tiers are Starter (5 USDC, list up to 2 signals) and Pro (10 USDC, list up to 5). The server verifies the payment landed on-chain to the treasury for the chosen tier before the application is accepted, and each fee transaction can only be used once.
 2. **Approval gate.** A paid application sits in a pending queue. An admin approves it (via the admin endpoint or `scripts/approve-merchant.ts`) before the merchant's signals appear in the public catalog. A suspended merchant's signals drop out automatically.
 
-Approved merchants seal their own signals with their own ed25519 key and submit them to `/api/submit-signal`. The server re-verifies the seal, confirms the signer is an approved merchant, and enforces the tier signal cap, so nobody can submit signals as someone else or exceed what they paid for. Lode keeps a 20% platform fee per sale (tracked on every ledger entry); the merchant keeps 80%.
+Approved merchants seal their own signals with their own ed25519 key and submit them to `/api/submit-signal`. The server re-verifies the seal, confirms the signer is an approved merchant, and enforces the tier signal cap, so nobody can submit signals as someone else or exceed what they paid for. Lode keeps a 5% platform fee per sale (tracked on every ledger entry); the merchant keeps 95%.
 
 ---
 
@@ -42,7 +42,7 @@ Approved merchants seal their own signals with their own ed25519 key and submit 
 Lode handles real money on mainnet, so payments are never taken on trust from the client:
 
 - **Buying a signal.** The buyer's wallet signs and sends the transfer client-side. The server then verifies that transaction on-chain (correct recipient, sufficient USDC or SOL, not already used) before unlocking the signal and recording the sale. A replayed or insufficient payment is rejected.
-- **Registering a merchant.** Same verification on the tier fee (10 or 25 USDC) before the application is accepted.
+- **Registering a merchant.** Same verification on the tier fee (5 or 10 USDC) before the application is accepted.
 - **Private keys** are never requested, displayed, logged, or committed. Wallet signing happens entirely in the browser.
 - **Execution** is dry-run first, always. The site refuses any `--confirm` command. Opening a real position happens only in the buyer's own terminal (see below).
 

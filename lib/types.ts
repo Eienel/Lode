@@ -171,8 +171,8 @@ export interface MerchantRecord {
 
 // Registration tiers: pay more to list more signals on the dashboard.
 export const MERCHANT_TIERS: { usd: number; signals: number; label: string }[] = [
-  { usd: 10, signals: 2, label: "Starter" },
-  { usd: 25, signals: 5, label: "Pro" },
+  { usd: 5, signals: 2, label: "Starter" },
+  { usd: 10, signals: 5, label: "Pro" },
 ];
 
 export function signalCapForTier(usd: number): number {

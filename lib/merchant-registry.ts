@@ -35,7 +35,7 @@ export async function registerMerchant(
     record = {
       ...data,
       status: "pending",
-      feeSharePct: 80,
+      feeSharePct: 95,
       registeredAt: new Date().toISOString(),
     };
     return [...records, record];

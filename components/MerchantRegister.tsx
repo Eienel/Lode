@@ -177,7 +177,7 @@ export function MerchantRegister() {
           <div className="flex items-start gap-1.5 rounded-md bg-paper-sunken px-2.5 py-2 text-[11px] leading-relaxed text-ink-soft">
             <ShieldCheck size={12} className="mt-0.5 shrink-0 text-good" />
             <span>
-              You pay {feeUsdc} USDC on Solana mainnet to register. Lode keeps a 20% platform fee on each signal you sell; you keep 80%.
+              You pay {feeUsdc} USDC on Solana mainnet to register. Lode keeps a 5% platform fee on each signal you sell; you keep 95%.
             </span>
           </div>
 
