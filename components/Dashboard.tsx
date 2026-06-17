@@ -51,9 +51,9 @@ export function Dashboard({
     setReputation(f.reputation);
   }
 
-  // Show the economy for the mode you are viewing: live = real on-chain (solana)
-  // earnings, mock = mock settlements. Each entry is tagged by backend already.
-  const modeLedger = ledger.filter((e) => (mock ? e.backend === "mock" : e.backend === "solana"));
+  // Show the economy for the mode you are viewing: live = real on-chain earnings
+  // (solana or base), mock = mock settlements. Each entry is tagged by backend.
+  const modeLedger = ledger.filter((e) => (mock ? e.backend === "mock" : e.backend !== "mock"));
   const economyVolume = modeLedger.reduce((s, e) => s + e.amount, 0);
 
   // Derive agent sales/revenue from the mode-filtered ledger so the merchant's
@@ -210,7 +210,7 @@ export function Dashboard({
                       </div>
                       <div className="ml-3 shrink-0 text-right">
                         <div className="font-mono text-[12px] tnum text-good">{e.amount} usdc</div>
-                        <div className={`text-[10px] ${e.backend === "solana" ? "text-accent font-medium" : "text-ink-faint"}`}>{e.backend}</div>
+                        <div className={`text-[10px] ${e.backend !== "mock" ? "text-accent font-medium" : "text-ink-faint"}`}>{e.backend}</div>
                       </div>
                     </motion.li>
                   ))}

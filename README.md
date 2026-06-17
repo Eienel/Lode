@@ -50,6 +50,21 @@ Persistence: the registry, ledger, and submitted signals use a durable store. Se
 
 ---
 
+## Payment rails and settlement
+
+Lode treats the treasury as Solana-denominated, but a buyer agent can pay on whichever chain it holds funds on. The model is settle-where-paid:
+
+- **Solana (default).** A wallet (Phantom or Solflare) signs a USDC or SOL transfer to the treasury. The server verifies it on-chain and unlocks the signal.
+- **Base via x402 (agent-native).** A buyer agent calls `GET /api/x402/:id`. With no payment it gets back HTTP `402 Payment Required` and an `accepts` block describing the USDC amount and the Base treasury to pay. The agent pays USDC on Base, then repeats the request with an `X-PAYMENT` header carrying the settled transaction. The server reads that transaction on Base, confirms a USDC transfer of at least the price landed in the treasury, and returns the unlocked signal. No wallet adapter, no browser, no manual signing step. The whole purchase is two HTTP calls, which is how an autonomous agent actually wants to buy.
+
+**Why settle-where-paid.** The signal unlocks the instant payment verifies on the chain the buyer used, so the buyer never waits on a bridge. Because signals are micropayments (5 to 25 USDC), bridging each individual payment would be uneconomic: a per-transfer bridge fee can be a large fraction of a small sale. Instead, funds received on Base accumulate and are swept to the Solana treasury in batches over [Circle CCTP](https://www.circle.com/cross-chain-transfer-protocol) (native USDC burn-and-mint, no wrapped-asset risk). The sweep is a periodic operations job, not part of the buyer's request path, so bridge fees amortize across many sales and the treasury stays effectively Solana-denominated.
+
+**Verification is symmetric.** Whether the rail is Solana or Base, the server reads the settled on-chain transaction itself and checks recipient, amount, and replay before unlocking. Payment is never taken on trust from the client. Every sale lands in the same ledger, tagged by backend (`solana` or `base`), so the dashboard shows one unified economy while funds may briefly live on two chains until the next sweep.
+
+The Base rail is gated by env (`LODE_TREASURY_BASE`, `BASE_RPC_URL`). When unset, `/api/x402/:id` reports the rail as unconfigured and buyers use the Solana flow. The CCTP sweep itself is a deferred ops job; it is documented here but not run on the request path.
+
+---
+
 ## Modes
 
 **Live mode (default on the site):** real Byreal pool data fetched over HTTP. Connect a Solana wallet (Phantom or Solflare) to pay with real USDC or SOL on mainnet. Execution stays dry-run so no positions open without your explicit confirm in the CLI.
@@ -84,11 +99,12 @@ lib/merchant.ts          mine, analyze, pick band, synthesize, seal
 lib/economy.ts           catalog, payment backends, ledger, reputation
 lib/identity.ts          ed25519 agent DID, seal and verify
 lib/merchant-registry.ts merchant registration, approval, submitted signals
-lib/solana-verify.ts     server-side on-chain payment verification
+lib/solana-verify.ts     server-side Solana payment verification
+lib/base-verify.ts       server-side Base (EVM) USDC payment verification
 lib/store.ts             durable key-value store (Redis or file)
 lib/mantle.ts            ERC-8004 identity registry on Mantle
 app/register/            merchant registration page (tiered fee)
-app/api/                 register-merchant, admin/approve-merchant, submit-signal
+app/api/                 register-merchant, admin/approve-merchant, submit-signal, x402/[id]
 components/              SignalCard, PayButton, MerchantRegister, RangeViz, Onboarding
 scripts/buyer.ts         headless A2A loop (terminal)
 scripts/merchant.ts      standalone mine and seal

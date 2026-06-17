@@ -88,7 +88,9 @@ export async function readLedger(): Promise<LedgerEntry[]> {
 // txRef so the same payment can never be recorded (or used to unlock) twice.
 export async function appendLedger(entry: LedgerEntry): Promise<void> {
   await mutate<LedgerEntry[]>(LEDGER_KEY, [], (ledger) => {
-    if (entry.backend === "solana" && ledger.find((e) => e.txRef === entry.txRef)) {
+    // On-chain rails (solana, base) are deduplicated by txRef so the same
+    // payment can never be recorded (or used to unlock) twice.
+    if (entry.backend !== "mock" && ledger.find((e) => e.txRef === entry.txRef)) {
       throw new Error("Transaction already recorded");
     }
     return [entry, ...ledger];
@@ -158,6 +160,7 @@ export async function recordOnChainPurchase(
   signal: AlphaSignal,
   buyerAgent: string,
   txRef: string,
+  backend: "solana" | "base" = "solana",
 ): Promise<PurchaseResult> {
   const signatureValid = verifySeal(signal);
   const entry: LedgerEntry = {
@@ -167,7 +170,7 @@ export async function recordOnChainPurchase(
     pair: signal.pair,
     amount: signal.priceUsdc,
     txRef,
-    backend: "solana",
+    backend,
     ts: new Date().toISOString(),
     platformFee: platformFee(signal.priceUsdc),
   };

@@ -149,7 +149,7 @@ export interface LedgerEntry {
   pair: string;
   amount: number; // USDC
   txRef: string;
-  backend: "mock" | "solana";
+  backend: "mock" | "solana" | "base"; // settlement rail; solana and base are both live on-chain
   ts: string;
   platformFee?: number; // 5% of amount, tracked for display, on-chain split is v2
 }
