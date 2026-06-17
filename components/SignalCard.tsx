@@ -47,15 +47,15 @@ export function SignalCard({ signal, onPurchased, mock }: { signal: ListedSignal
     <motion.div layout className="flex flex-col rounded-card border border-line bg-paper-raised shadow-card">
       {/* header */}
       <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
-        <div>
+        <div className="min-w-0">
           <div className="flex items-center gap-2">
             <h3 className="text-[15px] font-semibold tracking-tight text-ink">{signal.pair}</h3>
             <span className={`text-[11px] font-medium ${riskColor(signal.riskScore)}`}>{riskLabel(signal.riskScore)}</span>
           </div>
           <p className="mt-0.5 font-mono text-[10px] text-ink-faint">{signal.poolAddr}</p>
         </div>
-        <div className="text-right">
-          <div className="font-mono text-lg font-semibold tnum text-good">{pct(signal.estFeeApr)}</div>
+        <div className="shrink-0 text-right">
+          <div className="font-mono text-[16px] font-semibold tnum text-good">{pct(signal.estFeeApr)}</div>
           <div className="text-[10px] text-ink-faint">est fee apr</div>
         </div>
       </div>
