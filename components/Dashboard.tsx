@@ -51,12 +51,33 @@ export function Dashboard({
     setReputation(f.reputation);
   }
 
-  const merchantRep = reputation.find((r) => r.agent === merchant);
-
   // Show the economy for the mode you are viewing: live = real on-chain (solana)
   // earnings, mock = mock settlements. Each entry is tagged by backend already.
   const modeLedger = ledger.filter((e) => (mock ? e.backend === "mock" : e.backend === "solana"));
   const economyVolume = modeLedger.reduce((s, e) => s + e.amount, 0);
+
+  // Derive agent sales/revenue from the mode-filtered ledger so the merchant's
+  // income matches what is shown for the mode. Labels reuse the server set.
+  const labelFor = (agent: string) => reputation.find((r) => r.agent === agent)?.label;
+  const modeReputation: AgentReputation[] = (() => {
+    const map = new Map<string, AgentReputation>();
+    map.set(merchant, { agent: merchant, label: "Lode merchant", role: "merchant", sales: 0, revenue: 0 });
+    for (const e of modeLedger) {
+      const m = map.get(e.merchantAgent) ?? {
+        agent: e.merchantAgent, label: labelFor(e.merchantAgent) ?? "Merchant", role: "merchant" as const, sales: 0, revenue: 0,
+      };
+      m.sales += 1;
+      m.revenue += e.amount;
+      map.set(e.merchantAgent, m);
+      if (!map.has(e.buyerAgent)) {
+        map.set(e.buyerAgent, {
+          agent: e.buyerAgent, label: labelFor(e.buyerAgent) ?? `Buyer ${e.buyerAgent.slice(0, 4)}`, role: "buyer" as const, sales: 0, revenue: 0,
+        });
+      }
+    }
+    return [...map.values()];
+  })();
+  const merchantRep = modeReputation.find((r) => r.agent === merchant);
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-10">
@@ -142,7 +163,7 @@ export function Dashboard({
                 mantleRegistered={mantleRegistered}
                 primary
               />
-              {reputation
+              {modeReputation
                 .filter((r) => r.role === "buyer")
                 .slice(0, 3)
                 .map((r) => (
